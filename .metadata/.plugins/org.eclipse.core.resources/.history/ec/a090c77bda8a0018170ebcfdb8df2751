@@ -1,0 +1,10 @@
+
+public class Node {
+	int ID;
+	double latitude, longitude;
+	Node(int ID, double latitude, double longitude){
+		this.ID = ID;
+		this.latitude = latitude;
+		this.longitude = longitude;
+	}
+}

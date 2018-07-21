@@ -1,0 +1,16 @@
+
+public class Node {
+	private int ID;
+	private Location pos;
+	Node(int ID, double latitude, double longitude){
+		this.ID = ID;
+		this.pos = Location.newFromLatLon(latitude, longitude);
+	}
+	
+	public int ID() {
+		return ID;
+	}
+	public Location pos() {
+		return new Location(pos.x, pos.y);
+	}
+}

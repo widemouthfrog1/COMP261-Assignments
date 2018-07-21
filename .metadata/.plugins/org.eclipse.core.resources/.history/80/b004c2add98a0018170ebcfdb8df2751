@@ -1,0 +1,18 @@
+import java.util.ArrayList;
+
+public class Road {
+	ArrayList<Segment> segments = new ArrayList<Segment>();
+	int ID, speed;
+	String name, roadClass;
+	boolean oneWay, car, pedestrian, bike;//car, pedestrian, and bike are true when these modes of transport CAN use this road
+	
+	Road(int ID, String name, int oneWay, int speed, int roadClass, int car, int pedestrian, int bike){
+		this.ID = ID;
+		this.name = name;
+		this.oneWay = oneWay == 1 ? true : false;
+		this.car = car == 0 ? true : false;
+		this.pedestrian = pedestrian == 0 ? true : false;
+		this.bike = bike == 0 ? true : false;
+		
+	}
+}

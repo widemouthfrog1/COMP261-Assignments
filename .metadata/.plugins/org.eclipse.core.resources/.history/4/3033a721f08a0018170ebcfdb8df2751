@@ -1,0 +1,24 @@
+import java.util.ArrayList;
+
+public class Segment {
+	Road road;
+	double length;
+	Node node1;
+	Node node2;
+	ArrayList<Location> coords;
+	Segment(Road road, double length, Node node1, Node node2, ArrayList<Location> coords){
+		this.road = road;
+		this.length = length;
+		this.node1 = node1;
+		this.node2 = node2;
+		this.coords = coords;
+	}
+	
+	public static ArrayList<Location> doublesToListOfCoords(ArrayList<Double> xys) {
+		ArrayList<Location> coords = new ArrayList<Location>();
+		while(!xys.isEmpty()) {
+			coords.add(Location.newFromLatLon(xys.remove(1), xys.remove(0)));
+		}
+		return coords;
+	}
+}

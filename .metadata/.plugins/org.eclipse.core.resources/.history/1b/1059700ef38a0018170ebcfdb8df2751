@@ -1,0 +1,29 @@
+import java.util.HashSet;
+import java.util.Set;
+
+public class Node {
+	private int ID;
+	private Location pos;
+	private double latitude;
+	private double longitude;
+	private Set<Segment> outgoingSegments;
+	private Set<Segment> incomingSegments;
+	Node(int ID, double latitude, double longitude){
+		this.ID = ID;
+		this.latitude = latitude;
+		this.longitude = longitude;
+		this.pos = Location.newFromLatLon(latitude, longitude);
+		this.outgoingSegments = new HashSet<Segment>();
+		this.incomingSegments = new HashSet<Segment>();
+	}
+	
+	public int ID() {
+		return ID;
+	}
+	public Location pos() {
+		return new Location(pos.x, pos.y);
+	}
+	public Node copy() {
+		return new Node(this.ID, this.latitude, this.longitude);
+	}
+}
