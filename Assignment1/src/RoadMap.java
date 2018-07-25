@@ -11,19 +11,19 @@ import java.util.stream.Collectors;
 
 public class RoadMap extends GUI {
 	ArrayList<Node> nodes = new ArrayList<Node>();
-	private final int nodesize = 10;
+	private final int nodesize = 3;
 	@Override
 	protected void redraw(Graphics g) {
 		// TODO Auto-generated method stub
 		for(Node node : nodes) {
-			g.drawOval((int)node.pos().x, (int)node.pos().y, nodesize, nodesize);
+			g.drawOval(node.pos().x, node.pos().y, nodesize, nodesize);
 		}
 	}
 
 	@Override
 	protected void onClick(MouseEvent e) {
 		// TODO Auto-generated method stub
-
+		
 	}
 
 	@Override
@@ -35,7 +35,16 @@ public class RoadMap extends GUI {
 	@Override
 	protected void onMove(Move m) {
 		// TODO Auto-generated method stub
-
+		if(m == GUI.Move.ZOOM_IN) {
+			for(Node n : this.nodes) {
+				n.zoomIn(this.getDrawingAreaDimension());
+			}
+		}
+		if(m == GUI.Move.ZOOM_OUT) {
+			for(Node n : this.nodes) {
+				n.zoomOut(this.getDrawingAreaDimension());
+			}
+		}
 	}
 
 	@Override
