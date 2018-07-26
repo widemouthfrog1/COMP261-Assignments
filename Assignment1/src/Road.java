@@ -105,6 +105,10 @@ public class Road {
 		return set;
 	}
 	
+	public void addSegment(Segment segment) {
+		this.segments.add(segment);
+	}
+	
 	public static int classID(String roadClass) {
 		switch(roadClass) {
 		case "Residential":

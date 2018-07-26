@@ -1,9 +1,11 @@
-import java.awt.Dimension;
+import java.awt.Graphics;
 import java.awt.Point;
 import java.util.HashSet;
 import java.util.Set;
 
 public class Node {
+	private final int PIXEL_DISTANCE = 100;
+	private final int NODE_SIZE = 3;
 	private int ID;
 	private Point pos;
 	private double latitude;
@@ -41,6 +43,10 @@ public class Node {
 		}
 	}
 	
+	public void draw(Graphics g){
+		g.drawOval(this.pos.x, this.pos.y, this.NODE_SIZE, this.NODE_SIZE);
+	}
+	
 	public Set<Segment> outgoingSegments() {
 		HashSet<Segment> set = new HashSet<Segment>();
 		for(Segment segment : this.outgoingSegments) {
@@ -63,22 +69,23 @@ public class Node {
 	public Point pos() {
 		return new Point(pos.x, pos.y);
 	}
-	public void zoomIn(Dimension dimentions) {
-		double zoom = 2;
-		scale *= zoom;
-		origin = Location.newFromPoint(new Point(origin.asPoint(origin, scale/zoom).x + ((int)(dimentions.getWidth()) - (int)(dimentions.getWidth()/zoom))/2, origin.asPoint(origin, scale/zoom).y+ ((int)(dimentions.getHeight()) - (int)(dimentions.getHeight()/zoom))/2), origin, scale/zoom);
-		this.pos = Location.newFromLatLon(latitude, longitude).asPoint(origin,scale);
+	
+	public void moveUp() {
+		this.pos.y += this.PIXEL_DISTANCE;
 	}
-	public void zoomOut(Dimension dimentions) {
-		double zoom = 2;
-		scale /= zoom;	
-		origin = Location.newFromPoint(
-				new Point(origin.asPoint(origin, scale*zoom).x + ((int)(dimentions.getWidth()) - (int)(dimentions.getWidth()*zoom))/2, origin.asPoint(origin, scale*zoom).y + ((int)(dimentions.getHeight()) - (int)(dimentions.getHeight()*zoom))/2), 
-				origin, 
-				scale*zoom);
-		this.pos = Location.newFromLatLon(latitude, longitude).asPoint(origin,scale);
+	public void moveDown() {
+		this.pos.y -= PIXEL_DISTANCE;
+	}
+	public void moveLeft() {
+		this.pos.x -= PIXEL_DISTANCE;
+	}
+	public void moveRight() {
+		this.pos.x += PIXEL_DISTANCE;
 	}
 	public Node copy() {
 		return new Node(this.ID, this.latitude, this.longitude);
+	}
+	public void update(double scale, Location origin) {
+		this.pos = Location.newFromLatLon(latitude, longitude).asPoint(origin,scale);
 	}
 }

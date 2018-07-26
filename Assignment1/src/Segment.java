@@ -1,20 +1,30 @@
+import java.awt.Graphics;
+import java.awt.Point;
 import java.util.ArrayList;
 
 public class Segment {
 	private static int id = 0;
 	private int ID;
-	private Road road;
 	private double length;
 	private Node from;
 	private Node to;
+	private Road road;
 	ArrayList<Location> coords;
 	Segment(Road road, double length, Node from, Node to, ArrayList<Location> coords){
-		this.road = road;
 		this.length = length;
 		this.from = from;
 		this.to = to;
 		this.coords = coords;
 		ID = id++;
+		this.road = road;
+	}
+	
+	public void draw(Graphics g, Location origin, double scale) {
+		for(int i = 0; i < coords.size()-1; i++) {
+			Point p1 = coords.get(i).asPoint(origin, scale);
+			Point p2 = coords.get(i+1).asPoint(origin, scale);
+			g.drawLine(p1.x, p1.y, p2.x, p2.y);
+		}
 	}
 	
 	public int ID() {
@@ -22,8 +32,9 @@ public class Segment {
 	}
 	
 	public Road road() {
-		return new Road(road.ID(), road.name(), road.oneWay() ? 1 : 0, Road.speedID(road.speedLimit()), Road.classID(road.roadClass()), road.car() ? 0:1, road.pedestrian() ? 0:1, road.bike() ? 0:1);
+		return road;
 	}
+	
 	
 	public double length() {
 		return length;
