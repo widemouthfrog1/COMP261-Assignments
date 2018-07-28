@@ -45,7 +45,18 @@ public class RoadMap extends GUI {
 	@Override
 	protected void onSearch() {
 		// TODO Auto-generated method stub
-
+		for(Segment segment : this.segments) {
+			segment.dehighlight();
+		}
+		ArrayList<Road> output = this.roadTrie.get(this.getSearchBox().getText());
+		if(output == null) {
+			return;
+		}
+		for(Road road : output) {
+			for(Segment segment : road.segments()) {
+				segment.highlight();
+			}
+		}
 	}
 
 	@Override

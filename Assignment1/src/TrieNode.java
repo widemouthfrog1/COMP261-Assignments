@@ -25,6 +25,15 @@ public class TrieNode<T> {
 		return null;
 	}
 	
+	public ArrayList<T> getObjects(){
+		return objects;
+	}
+	
+	public ArrayList<TrieNode<T>> getChildren(){
+		return this.children;
+	}
+	
+	
 	public boolean contains(char letter) {
 		for(TrieNode<T> node : children) {
 			if(node.letter == letter) {

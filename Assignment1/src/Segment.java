@@ -1,3 +1,4 @@
+import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Point;
 import java.util.ArrayList;
@@ -9,6 +10,7 @@ public class Segment {
 	private Node from;
 	private Node to;
 	private Road road;
+	private boolean highlight = false;
 	ArrayList<Location> coords;
 	Segment(Road road, double length, Node from, Node to, ArrayList<Location> coords){
 		this.length = length;
@@ -23,8 +25,20 @@ public class Segment {
 		for(int i = 0; i < coords.size()-1; i++) {
 			Point p1 = coords.get(i).asPoint(origin, scale);
 			Point p2 = coords.get(i+1).asPoint(origin, scale);
+			if(highlight) {
+				g.setColor(Color.yellow);
+			}
 			g.drawLine(p1.x, p1.y, p2.x, p2.y);
 		}
+		g.setColor(Color.black);
+	}
+	
+	public void highlight() {
+		highlight = true;
+	}
+	
+	public void dehighlight() {
+		highlight = false;
 	}
 	
 	public int ID() {
