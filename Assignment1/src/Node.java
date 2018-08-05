@@ -1,25 +1,27 @@
+import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Point;
 import java.util.HashSet;
 import java.util.Set;
 
+import javax.swing.JTextArea;
+
 public class Node {
-	private final int PIXEL_DISTANCE = 100;
 	private final int NODE_SIZE = 3;
 	private int ID;
 	private Point pos;
+	private Location location;
 	private double latitude;
 	private double longitude;
 	private Set<Segment> outgoingSegments;
 	private Set<Segment> incomingSegments;
-	private double scale = 100;
-	private Location origin = new Location(0,0);
+	private boolean highlight = false;
 	
 	Node(int ID, double latitude, double longitude){
 		this.ID = ID;
 		this.latitude = latitude;
 		this.longitude = longitude;
-		this.pos = Location.newFromLatLon(latitude, longitude).asPoint(origin, scale);
+		this.location = Location.newFromLatLon(latitude, longitude);
 		this.outgoingSegments = new HashSet<Segment>();
 		this.incomingSegments = new HashSet<Segment>();
 	}
@@ -43,8 +45,17 @@ public class Node {
 		}
 	}
 	
-	public void draw(Graphics g){
+	public void draw(Graphics g, Location origin, double scale, JTextArea jTextArea){
+		if(highlight) {
+			g.setColor(Color.red);
+			for(Segment s : this.incomingSegments) {
+				//jTextArea.setText(s.road().name());
+			}
+		}
+		this.pos = location.asPoint(origin,scale);
+		//jTextArea.setText("pos.x: " + pos.x + " pos.y: " + pos.y);
 		g.drawOval(this.pos.x, this.pos.y, this.NODE_SIZE, this.NODE_SIZE);
+		g.setColor(Color.black);
 	}
 	
 	public Set<Segment> outgoingSegments() {
@@ -53,6 +64,14 @@ public class Node {
 			set.add(segment);
 		}
 		return set;
+	}
+	
+	public void highlight() {
+		highlight = true;
+	}
+	
+	public void dehighlight() {
+		highlight = false;
 	}
 	
 	public Set<Segment> incomingSegments() {
@@ -70,22 +89,13 @@ public class Node {
 		return new Point(pos.x, pos.y);
 	}
 	
-	public void moveUp() {
-		this.pos.y += this.PIXEL_DISTANCE;
-	}
-	public void moveDown() {
-		this.pos.y -= PIXEL_DISTANCE;
-	}
-	public void moveLeft() {
-		this.pos.x -= PIXEL_DISTANCE;
-	}
-	public void moveRight() {
-		this.pos.x += PIXEL_DISTANCE;
+	public Location location() {
+		return location;
 	}
 	public Node copy() {
 		return new Node(this.ID, this.latitude, this.longitude);
 	}
-	public void update(double scale, Location origin) {
-		this.pos = Location.newFromLatLon(latitude, longitude).asPoint(origin,scale);
+	public String toString() {
+		return this.incomingSegments.toString();
 	}
 }

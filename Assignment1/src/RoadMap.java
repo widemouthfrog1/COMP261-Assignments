@@ -17,6 +17,8 @@ public class RoadMap extends GUI {
 	private final int PIXEL_DISTANCE = 100;
 
 	ArrayList<Node> nodes = new ArrayList<Node>();
+	Node highlightedNode = null;
+	QuadTree<Node> nodeQuadTree = new QuadTree<Node>();
 	Map<Integer, Node> nodeIDMap = new HashMap<Integer, Node>();
 	ArrayList<Segment> segments = new ArrayList<Segment>();
 	ArrayList<Road> roads = new ArrayList<Road>();
@@ -29,16 +31,27 @@ public class RoadMap extends GUI {
 	protected void redraw(Graphics g) {
 		// TODO Auto-generated method stub
 		for(Node node : nodes) {
-			node.draw(g);
+			node.draw(g, origin, scale, this.getTextOutputArea());
 		}
 		for(Segment segment : segments) {
 			segment.draw(g, origin, scale);
+		}
+		
+		if(!this.nodeQuadTree.isEmpty()) {
+			this.nodeQuadTree.draw(g, origin, scale, this.getTextOutputArea());
 		}
 	}
 
 	@Override
 	protected void onClick(MouseEvent e) {
 		// TODO Auto-generated method stub
+		if(this.highlightedNode != null) {
+			this.highlightedNode.dehighlight();
+		}
+		Node node = nodeQuadTree.getNearest(Location.newFromPoint(e.getPoint(), origin, scale));
+		this.highlightedNode = node;
+		this.highlightedNode.highlight();
+		this.getTextOutputArea().setText(e.getPoint().toString());
 		
 	}
 
@@ -64,56 +77,40 @@ public class RoadMap extends GUI {
 		// TODO Auto-generated method stub
 		switch(m) {
 		case ZOOM_IN:
-			scale *= zoom;
 			Dimension dimensions = this.getDrawingAreaDimension();
 			origin = Location.newFromPoint(
 					new Point(
-							origin.asPoint(origin, scale/zoom).x + ((int)(dimensions.getWidth()) - (int)(dimensions.getWidth()/zoom))/2, 
-							origin.asPoint(origin, scale/zoom).y+ ((int)(dimensions.getHeight()) - (int)(dimensions.getHeight()/zoom))/2
+							origin.asPoint(origin, scale).x + ((int)(dimensions.getWidth()) - (int)(dimensions.getWidth()/zoom))/2, 
+							origin.asPoint(origin, scale).y + ((int)(dimensions.getHeight()) - (int)(dimensions.getHeight()/zoom))/2
 							), 
 					origin, 
-					scale/zoom);
-			for(Node n : this.nodes) {
-				n.update(scale, origin);
-			}
+					scale);
+			scale *= zoom;
+			
+			
 			break;
 		case ZOOM_OUT:
-			scale /= zoom;	
 			dimensions = this.getDrawingAreaDimension();
 			origin = Location.newFromPoint(
 					new Point(
-							origin.asPoint(origin, scale*zoom).x + ((int)(dimensions.getWidth()) - (int)(dimensions.getWidth()*zoom))/2, 
-							origin.asPoint(origin, scale*zoom).y + ((int)(dimensions.getHeight()) - (int)(dimensions.getHeight()*zoom))/2
+							origin.asPoint(origin, scale).x + ((int)(dimensions.getWidth()) - (int)(dimensions.getWidth()*zoom))/2, 
+							origin.asPoint(origin, scale).y + ((int)(dimensions.getHeight()) - (int)(dimensions.getHeight()*zoom))/2
 							), 
 					origin, 
-					scale*zoom);
-			for(Node n : this.nodes) {
-				n.update(scale, origin);
-			}
+					scale);
+			scale /= zoom;
 			break;
 		case NORTH:
 			this.origin = Location.newFromPoint(new Point(origin.asPoint(origin, scale).x, origin.asPoint(origin, scale).y - PIXEL_DISTANCE), origin, scale);
-			for(Node n : this.nodes) {
-				n.moveUp();
-			}
 			break;
 		case SOUTH:
 			this.origin = Location.newFromPoint(new Point(origin.asPoint(origin, scale).x, origin.asPoint(origin, scale).y + PIXEL_DISTANCE), origin, scale);
-			for(Node n : this.nodes) {
-				n.moveDown();
-			}
 			break;
 		case EAST:
 			this.origin = Location.newFromPoint(new Point(origin.asPoint(origin, scale).x + PIXEL_DISTANCE, origin.asPoint(origin, scale).y), origin, scale);
-			for(Node n : this.nodes) {
-				n.moveLeft();
-			}
 			break;
 		case WEST:
 			this.origin = Location.newFromPoint(new Point(origin.asPoint(origin, scale).x - PIXEL_DISTANCE, origin.asPoint(origin, scale).y), origin, scale);
-			for(Node n : this.nodes) {
-				n.moveRight();
-			}
 			break;
 		}
 	}
@@ -136,12 +133,40 @@ public class RoadMap extends GUI {
 		try {
 			BufferedReader reader = new BufferedReader(new FileReader(nodes));
 			List<String> lines = reader.lines().collect(Collectors.toList());
+			Location BL = null, TR = null;
+			boolean first = true;
 			for(String line : lines) {
 				String[] lineValues = line.split("\t");
 				if(lineValues.length == 3) {
-					this.nodes.add(new Node(Integer.parseInt(lineValues[0]), Double.parseDouble(lineValues[1]), Double.parseDouble(lineValues[2])));
-					this.nodeIDMap.put(Integer.parseInt(lineValues[0]), this.nodes.get(this.nodes.size()-1));
+					Node node = new Node(Integer.parseInt(lineValues[0]), Double.parseDouble(lineValues[1]), Double.parseDouble(lineValues[2]));
+					this.nodes.add(node);
+					if(first) {
+						first = false;
+						BL = Location.newFromLatLon(Double.parseDouble(lineValues[1]), Double.parseDouble(lineValues[2]));
+						TR = Location.newFromLatLon(Double.parseDouble(lineValues[1]), Double.parseDouble(lineValues[2]));
+					}else {
+						Location location = Location.newFromLatLon(Double.parseDouble(lineValues[1]), Double.parseDouble(lineValues[2]));
+						if(location.x < BL.x) {
+							BL = new Location(location.x, BL.y);
+						}
+						if(location.y < BL.y) {
+							BL = new Location(BL.x, location.y);
+						}
+						if(location.x > TR.x) {
+							TR = new Location(location.x, TR.y);
+						}
+						if(location.y > TR.y) {
+							TR = new Location(TR.x, location.y);
+						}
+					}
+					BL = new Location(BL.x-0.005, BL.y-0.005);
+					TR = new Location(TR.x+0.01, TR.y+0.005);
+					this.nodeIDMap.put(Integer.parseInt(lineValues[0]), node);
 				}
+			}
+			this.nodeQuadTree.setSize(BL, TR);
+			for(Node node : this.nodes) {
+				this.nodeQuadTree.add(node, node.location());
 			}
 			reader.close();
 		} catch (FileNotFoundException e) {

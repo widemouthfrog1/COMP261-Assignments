@@ -70,4 +70,7 @@ public class Segment {
 		}
 		return coords;
 	}
+	public String toString() {
+		return this.road.name();
+	}
 }
