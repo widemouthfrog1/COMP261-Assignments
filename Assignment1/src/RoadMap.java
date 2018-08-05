@@ -9,8 +9,10 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class RoadMap extends GUI {
@@ -49,9 +51,26 @@ public class RoadMap extends GUI {
 			this.highlightedNode.dehighlight();
 		}
 		Node node = nodeQuadTree.getNearest(Location.newFromPoint(e.getPoint(), origin, scale));
+		if(node == null) {
+			return;
+		}
 		this.highlightedNode = node;
 		this.highlightedNode.highlight();
-		this.getTextOutputArea().setText(e.getPoint().toString());
+		String text = "ID: "+ node.ID() + "\n";
+		Set<String> roadSet = new HashSet<String>();
+		for(Segment segment : node.incomingSegments()) {
+			if(!roadSet.contains(segment.road().name())) {
+				text += segment.road().name() + "\n";
+				roadSet.add(segment.road().name());
+			}
+		}
+		for(Segment segment : node.outgoingSegments()) {
+			if(!roadSet.contains(segment.road().name())) {
+				text += segment.road().name() + "\n";
+				roadSet.add(segment.road().name());
+			}
+		}
+		this.getTextOutputArea().setText(text);
 		
 	}
 

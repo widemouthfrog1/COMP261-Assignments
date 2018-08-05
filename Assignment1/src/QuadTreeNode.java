@@ -201,7 +201,7 @@ public class QuadTreeNode<T> {
 		
 		while(pointer.top()) {
 			pointer = pointer.parent;
-			if(pointer == null) {
+			if(pointer.parent == null) {
 				//we're at the top so there isn't a node above
 				return null;
 			}
@@ -249,7 +249,7 @@ public class QuadTreeNode<T> {
 		
 		while(pointer.bottom()) {
 			pointer = pointer.parent;
-			if(pointer == null) {
+			if(pointer.parent == null) {
 				//we're at the bottom so there isn't a node below
 				return null;
 			}
@@ -297,8 +297,8 @@ public class QuadTreeNode<T> {
 		
 		while(pointer.left()) {
 			pointer = pointer.parent;
-			if(pointer == null) {
-				//we're at the left edge so there isn't a node below
+			if(pointer.parent == null) {
+				//we're at the left edge so there isn't a node to the left
 				return null;
 			}
 			pointerStack.push(pointer);//so we can get back down no matter how far up we go
@@ -346,8 +346,8 @@ public class QuadTreeNode<T> {
 		
 		while(pointer.right()) {
 			pointer = pointer.parent;
-			if(pointer == null) {
-				//we're at the right edge so there isn't a node below
+			if(pointer.parent == null) {
+				//we're at the right edge so there isn't a node to the right
 				return null;
 			}
 			pointerStack.push(pointer);//so we can get back down no matter how far up we go
