@@ -7,7 +7,7 @@ import java.util.Set;
 import javax.swing.JTextArea;
 
 public class Node {
-	private final int NODE_SIZE = 3;
+	private final int NODE_SIZE = 1;
 	private int ID;
 	private Point pos;
 	private Location location;
@@ -48,9 +48,6 @@ public class Node {
 	public void draw(Graphics g, Location origin, double scale, JTextArea jTextArea){
 		if(highlight) {
 			g.setColor(Color.red);
-			for(Segment s : this.incomingSegments) {
-				//jTextArea.setText(s.road().name());
-			}
 		}
 		this.pos = location.asPoint(origin,scale);
 		//jTextArea.setText("pos.x: " + pos.x + " pos.y: " + pos.y);

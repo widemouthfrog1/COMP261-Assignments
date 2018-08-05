@@ -1,7 +1,5 @@
 import java.awt.Graphics;
 
-import javax.swing.JTextArea;
-
 public class QuadTree<T> {
 	QuadTreeNode<T> head;
 	QuadTree(){}
@@ -14,9 +12,8 @@ public class QuadTree<T> {
 		head.add(object, loc);
 	}
 	
-	public void draw(Graphics g, Location origin, double scale, JTextArea jTextArea) {
-		head.draw(g, origin, scale, jTextArea);
-		head.highlightNode(jTextArea);
+	public void draw(Graphics g, Location origin, double scale) {
+		head.draw(g, origin, scale);
 	}
 	
 	public boolean isEmpty() {

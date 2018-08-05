@@ -26,27 +26,33 @@ public class RoadMap extends GUI {
 	ArrayList<Road> roads = new ArrayList<Road>();
 	Trie<Road> roadTrie = new Trie<Road>();
 	Map<Integer, Road> roadIDMap = new HashMap<Integer, Road>();
+	ArrayList<RoadMapPolygon> polygons = new ArrayList<RoadMapPolygon>();
 	Location origin = new Location(0,0);
 	private double scale = 100;
 	private final double zoom = 2;
 	@Override
 	protected void redraw(Graphics g) {
 		// TODO Auto-generated method stub
-		for(Node node : nodes) {
-			node.draw(g, origin, scale, this.getTextOutputArea());
+		for(RoadMapPolygon polygon : polygons) {
+			polygon.draw(g, origin, scale);
 		}
+		
 		for(Segment segment : segments) {
 			segment.draw(g, origin, scale);
 		}
-		
-		if(!this.nodeQuadTree.isEmpty()) {
-			this.nodeQuadTree.draw(g, origin, scale, this.getTextOutputArea());
+		for(Node node : nodes) {
+			node.draw(g, origin, scale, this.getTextOutputArea());
 		}
+		
+		
+		
+		//if(!this.nodeQuadTree.isEmpty()) {
+			//this.nodeQuadTree.draw(g, origin, scale);
+		//}
 	}
 
 	@Override
 	protected void onClick(MouseEvent e) {
-		// TODO Auto-generated method stub
 		if(this.highlightedNode != null) {
 			this.highlightedNode.dehighlight();
 		}
@@ -267,6 +273,62 @@ public class RoadMap extends GUI {
 			// TODO Auto-generated catch block
 			this.getTextOutputArea().setText("Failed to close reader reading road segments: "+ e.toString());
 		}
+		
+		if(polygons == null) {
+			return;
+		}
+		
+		
+		try {
+			BufferedReader reader = new BufferedReader(new FileReader(polygons));
+			List<String> lines = reader.lines().collect(Collectors.toList());
+			String color = null, label = null, endLevel = null;
+			ArrayList<Location> coords = new ArrayList<Location>();
+			Set<String> types = new HashSet<String>();
+			for(String s : lines) {
+				
+				
+				if(s.contains("Type")) {
+					color = s.substring(5);
+					types.add(color);
+					color = color.trim();
+				}
+				if(s.contains("Label")) {
+					label = s.substring(6);
+					label = label.trim();
+				}
+				if(s.contains("EndLevel")) {
+					endLevel = s.substring(9);
+					endLevel = endLevel.trim();
+				}
+				if(s.contains("Data")) {
+					s = s.substring(6);
+					s = s.replaceAll("\\(", "");
+					s = s.replaceAll("\\)", "");
+					String[] strings;
+					strings = s.split(",");
+					for(int i = 0; i < strings.length; i += 2) {
+						coords.add(Location.newFromLatLon(Double.parseDouble(strings[i]), Double.parseDouble(strings[i+1])));
+					}
+				}
+				if(s.contains("[END]")) {
+					
+					this.polygons.add(new RoadMapPolygon(color,endLevel, label, coords));
+					color = null;
+					label = null;
+					coords = new ArrayList<Location>();
+				}
+			}
+			
+			
+			
+			reader.close();
+		} catch (FileNotFoundException e) {
+			this.getTextOutputArea().setText("Failed to load polygons: "+ e.toString());
+		} catch (IOException e) {
+			this.getTextOutputArea().setText("Failed to close reader reading polygons: "+ e.toString());
+		}
+		
 	}
 	
 	public static void main(String[] args) {

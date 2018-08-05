@@ -1,9 +1,6 @@
-import java.awt.Color;
 import java.awt.Graphics;
 import java.util.ArrayList;
 import java.util.Stack;
-
-import javax.swing.JTextArea;
 
 public class QuadTreeNode<T> {
 	public QuadTreeNode<T> TR = null, TL = null, BR = null, BL = null;
@@ -13,7 +10,6 @@ public class QuadTreeNode<T> {
 	private QuadTreeNode<T> parent;
 	private double top, bottom, left, right;
 	private int stackNumber = 0;
-	private boolean highlight = false;
 	
 	QuadTreeNode(QuadTreeNode<T> parent, Location BL, Location TR){
 		this.parent = parent;
@@ -23,17 +19,13 @@ public class QuadTreeNode<T> {
 		this.right = TR.x;
 	}
 	
-	public void draw(Graphics g, Location origin, double scale, JTextArea jTextArea) {
+	public void draw(Graphics g, Location origin, double scale) {
 		//jTextArea.setText("Top: " + String.valueOf(this.top) + " Bottom: " + String.valueOf(this.bottom));
 		
 		g.drawRect(new Location(this.left, this.top).asPoint(origin, scale).x, new Location(this.left,this.top).asPoint(origin, scale).y , this.absolute(new Location(this.right, this.bottom).asPoint(origin, scale).x - new Location(this.left, this.top).asPoint(origin, scale).x) , this.absolute((new Location(this.right, this.bottom).asPoint(origin, scale).y - new Location(this.left, this.top).asPoint(origin, scale).y)));
 
 		for(QuadTreeNode<T> node : this.getAll()) {
-			if(node.highlight) {
-				g.setColor(Color.yellow);
-			}
 			g.drawRect(new Location(node.left, node.top).asPoint(origin, scale).x, new Location(node.left,node.top).asPoint(origin, scale).y , node.absolute(new Location(node.right, node.bottom).asPoint(origin, scale).x - new Location(node.left, node.top).asPoint(origin, scale).x) , node.absolute((new Location(node.right, node.bottom).asPoint(origin, scale).y - new Location(node.left, node.top).asPoint(origin, scale).y)));
-			g.setColor(Color.black);
 		}
 	}
 	
@@ -93,10 +85,6 @@ public class QuadTreeNode<T> {
 				BL.add(object, loc);
 			}
 		}
-	}
-	public void highlightNode(JTextArea jTextArea) {
-		//jTextArea.setText(this.TL.BR.TL.BL.BL.TL.TL.BL.location.toString());
-		this.TL.BR.TL.BL.BL.TL.TL.BL.highlight = true;
 	}
 	public boolean within(Location loc) {
 		return loc.x >= this.left && loc.x < this.right && loc.y >= this.bottom && loc.y < this.top;//could be exactly on edge but don't want more than one node containing the object
