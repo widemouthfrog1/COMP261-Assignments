@@ -20,7 +20,6 @@ public class QuadTreeNode<T> {
 	}
 	
 	public void draw(Graphics g, Location origin, double scale) {
-		//jTextArea.setText("Top: " + String.valueOf(this.top) + " Bottom: " + String.valueOf(this.bottom));
 		
 		g.drawRect(new Location(this.left, this.top).asPoint(origin, scale).x, new Location(this.left,this.top).asPoint(origin, scale).y , this.absolute(new Location(this.right, this.bottom).asPoint(origin, scale).x - new Location(this.left, this.top).asPoint(origin, scale).x) , this.absolute((new Location(this.right, this.bottom).asPoint(origin, scale).y - new Location(this.left, this.top).asPoint(origin, scale).y)));
 

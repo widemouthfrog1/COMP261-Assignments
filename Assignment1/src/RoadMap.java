@@ -32,7 +32,6 @@ public class RoadMap extends GUI {
 	private final double zoom = 2;
 	@Override
 	protected void redraw(Graphics g) {
-		// TODO Auto-generated method stub
 		for(RoadMapPolygon polygon : polygons) {
 			polygon.draw(g, origin, scale);
 		}
@@ -82,7 +81,6 @@ public class RoadMap extends GUI {
 
 	@Override
 	protected void onSearch() {
-		// TODO Auto-generated method stub
 		for(Segment segment : this.segments) {
 			segment.dehighlight();
 		}
@@ -99,7 +97,6 @@ public class RoadMap extends GUI {
 
 	@Override
 	protected void onMove(Move m) {
-		// TODO Auto-generated method stub
 		switch(m) {
 		case ZOOM_IN:
 			Dimension dimensions = this.getDrawingAreaDimension();
@@ -153,7 +150,6 @@ public class RoadMap extends GUI {
 
 	@Override
 	protected void onLoad(File nodes, File roads, File segments, File polygons) {
-		// TODO Auto-generated method stub
 		clearState();
 		try {
 			BufferedReader reader = new BufferedReader(new FileReader(nodes));
@@ -195,10 +191,8 @@ public class RoadMap extends GUI {
 			}
 			reader.close();
 		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
 			this.getTextOutputArea().setText("Failed to load nodes: "+ e.toString());
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			this.getTextOutputArea().setText("Failed to close reader reading nodes: "+ e.toString());
 		}
 		
@@ -226,10 +220,8 @@ public class RoadMap extends GUI {
 			}
 			reader.close();
 		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
 			this.getTextOutputArea().setText("Failed to load roads: "+ e.toString());
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			this.getTextOutputArea().setText("Failed to close reader reading roads: "+ e.toString());
 		}
 		
@@ -267,10 +259,8 @@ public class RoadMap extends GUI {
 			}
 			reader.close();
 		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
 			this.getTextOutputArea().setText("Failed to load road segments: "+ e.toString());
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			this.getTextOutputArea().setText("Failed to close reader reading road segments: "+ e.toString());
 		}
 		
@@ -332,7 +322,6 @@ public class RoadMap extends GUI {
 	}
 	
 	public static void main(String[] args) {
-		// TODO Auto-generated method stub
 		new RoadMap();
 		
 	}

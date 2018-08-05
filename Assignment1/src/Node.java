@@ -50,7 +50,6 @@ public class Node {
 			g.setColor(Color.red);
 		}
 		this.pos = location.asPoint(origin,scale);
-		//jTextArea.setText("pos.x: " + pos.x + " pos.y: " + pos.y);
 		g.drawOval(this.pos.x, this.pos.y, this.NODE_SIZE, this.NODE_SIZE);
 		g.setColor(Color.black);
 	}
