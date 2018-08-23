@@ -1,13 +1,13 @@
 import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Point;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
 
-import javax.swing.JTextArea;
 
 public class Node {
-	private final int NODE_SIZE = 1;
+	private final int NODE_SIZE = 3;
 	private int ID;
 	private Point pos;
 	private Location location;
@@ -15,7 +15,11 @@ public class Node {
 	private double longitude;
 	private Set<Segment> outgoingSegments;
 	private Set<Segment> incomingSegments;
-	private boolean highlight = false;
+	private boolean highlightGoal = false;
+	private boolean highlightStart = false;
+	private boolean visited = false;
+	private Node previous = null;
+	private Integer count = null;
 	
 	Node(int ID, double latitude, double longitude){
 		this.ID = ID;
@@ -45,12 +49,22 @@ public class Node {
 		}
 	}
 	
-	public void draw(Graphics g, Location origin, double scale, JTextArea jTextArea){
-		if(highlight) {
+	public void draw(Graphics g, Location origin, double scale){
+		if(highlightStart) {
 			g.setColor(Color.red);
 		}
+		if(highlightGoal) {
+			g.setColor(Color.magenta);
+		}
 		this.pos = location.asPoint(origin,scale);
-		g.drawOval(this.pos.x, this.pos.y, this.NODE_SIZE, this.NODE_SIZE);
+		g.fillOval(this.pos.x, this.pos.y, this.NODE_SIZE, this.NODE_SIZE);
+		g.setColor(Color.black);
+	}
+	
+	public void drawArticulationPoint(Graphics g, Location origin, double scale) {
+		g.setColor(Color.red);
+		this.pos = location.asPoint(origin,scale);
+		g.drawOval(this.pos.x, this.pos.y, this.NODE_SIZE+1, this.NODE_SIZE+1);
 		g.setColor(Color.black);
 	}
 	
@@ -62,12 +76,20 @@ public class Node {
 		return set;
 	}
 	
-	public void highlight() {
-		highlight = true;
+	public void highlightStart() {
+		highlightStart = true;
+		dehighlightGoal();
+	}
+	public void highlightGoal() {
+		highlightGoal = true;
+		dehighlightStart();
 	}
 	
-	public void dehighlight() {
-		highlight = false;
+	public void dehighlightStart() {
+		highlightStart = false;
+	}
+	public void dehighlightGoal() {
+		highlightGoal = false;
 	}
 	
 	public Set<Segment> incomingSegments() {
@@ -83,6 +105,52 @@ public class Node {
 	}
 	public Point pos() {
 		return new Point(pos.x, pos.y);
+	}
+	
+	public double getEstimatedCost(Node goal) {
+		return this.location.distance(goal.location());
+	}
+	
+	public boolean visited() {
+		return visited;
+	}
+	public void visited(boolean visited) {
+		this.visited = visited;
+	}
+	
+	public Node previous() {
+		return this.previous;
+	}
+	
+	public void previous(Node previous) {
+		this.previous = previous;
+	}
+	
+	public Integer count() {
+		return count;
+	}
+	
+	public void count(Integer count) {
+		this.count = count;
+	}
+	
+	public ArrayList<Node> getNeighbours() {
+		ArrayList<Node> nodes = new ArrayList<Node>();
+		for(Segment segment : this.incomingSegments()) {
+			if(segment.from().ID() == this.ID) {
+				nodes.add(segment.to());
+			}else {
+				nodes.add(segment.from());
+			}
+		}
+		for(Segment segment : this.outgoingSegments()) {
+			if(segment.from().ID() == this.ID) {
+				nodes.add(segment.to());
+			}else {
+				nodes.add(segment.from());
+			}
+		}
+		return nodes;
 	}
 	
 	public Location location() {

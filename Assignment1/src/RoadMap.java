@@ -1,5 +1,6 @@
 import java.awt.Dimension;
 import java.awt.Graphics;
+import java.awt.MouseInfo;
 import java.awt.Point;
 import java.awt.event.MouseEvent;
 import java.io.BufferedReader;
@@ -8,18 +9,24 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.PriorityQueue;
 import java.util.Set;
+import java.util.Stack;
 import java.util.stream.Collectors;
 
 public class RoadMap extends GUI {
 	private final int PIXEL_DISTANCE = 100;
 
 	ArrayList<Node> nodes = new ArrayList<Node>();
-	Node highlightedNode = null;
+	Node start = null;
+	Node goal = null;
+	ArrayList<Segment> shortestRoute = new ArrayList<Segment>();
 	QuadTree<Node> nodeQuadTree = new QuadTree<Node>();
 	Map<Integer, Node> nodeIDMap = new HashMap<Integer, Node>();
 	ArrayList<Segment> segments = new ArrayList<Segment>();
@@ -27,6 +34,8 @@ public class RoadMap extends GUI {
 	Trie<Road> roadTrie = new Trie<Road>();
 	Map<Integer, Road> roadIDMap = new HashMap<Integer, Road>();
 	ArrayList<RoadMapPolygon> polygons = new ArrayList<RoadMapPolygon>();
+	Set<Node> articulationPoints = new HashSet<Node>();
+	Set<Node> visitedNodes = new HashSet<Node>();
 	Location origin = new Location(0,0);
 	private double scale = 100;
 	private final double zoom = 2;
@@ -40,10 +49,12 @@ public class RoadMap extends GUI {
 			segment.draw(g, origin, scale);
 		}
 		for(Node node : nodes) {
-			node.draw(g, origin, scale, this.getTextOutputArea());
+			node.draw(g, origin, scale);
 		}
 		
-		
+		for(Node node: this.articulationPoints) {
+			node.drawArticulationPoint(g, origin, scale);
+		}
 		
 		//if(!this.nodeQuadTree.isEmpty()) {
 			//this.nodeQuadTree.draw(g, origin, scale);
@@ -52,30 +63,40 @@ public class RoadMap extends GUI {
 
 	@Override
 	protected void onClick(MouseEvent e) {
-		if(this.highlightedNode != null) {
-			this.highlightedNode.dehighlight();
+		if(this.start != null && e.getButton() == 1) {
+			this.start.dehighlightStart();
+		}
+		if(this.goal != null && e.getButton() == 3) {
+			this.goal.dehighlightGoal();
 		}
 		Node node = nodeQuadTree.getNearest(Location.newFromPoint(e.getPoint(), origin, scale));
 		if(node == null) {
 			return;
 		}
-		this.highlightedNode = node;
-		this.highlightedNode.highlight();
-		String text = "ID: "+ node.ID() + "\n";
-		Set<String> roadSet = new HashSet<String>();
-		for(Segment segment : node.incomingSegments()) {
-			if(!roadSet.contains(segment.road().name())) {
-				text += segment.road().name() + "\n";
-				roadSet.add(segment.road().name());
-			}
+		if(e.getButton() == 1) {
+			this.start = node;
+			this.start.highlightStart();
+		}else if(e.getButton() == 3) {
+			this.goal = node;
+			this.goal.highlightGoal();
 		}
-		for(Segment segment : node.outgoingSegments()) {
-			if(!roadSet.contains(segment.road().name())) {
-				text += segment.road().name() + "\n";
-				roadSet.add(segment.road().name());
+		if(start != null && goal != null) {
+			if(shortestRoute != null) {
+				for(int i = 0; i < shortestRoute.size(); i++) {
+					shortestRoute.get(i).dehighlight();
+				}
 			}
+			shortestRoute = this.aStarSearch(start, goal);
+			if(shortestRoute == null) {return;}
+			ArrayList<Double> lengths = this.segmentLengths(shortestRoute);
+			String text = "";
+			for(int i = 0; i < shortestRoute.size(); i++) {
+				shortestRoute.get(i).highlight();
+				text += shortestRoute.get(i).road().name()+": "+lengths.get(i)+"km\n";
+			}
+			text += "Total: "+lengths.get(lengths.size()-1)+"km\n";
+			this.getTextOutputArea().setText(text);
 		}
-		this.getTextOutputArea().setText(text);
 		
 	}
 
@@ -146,6 +167,138 @@ public class RoadMap extends GUI {
 		this.roadTrie.clear();
 		this.origin = new Location(0,0);
 		this.scale = 100;
+		this.shortestRoute.clear();
+		this.start = null;
+		this.goal = null;
+	}
+	
+	public ArrayList<Segment> aStarSearch(Node start, Node goal) {
+		for(Node n: this.nodes) {
+			n.visited(false);
+		}
+		
+		PriorityQueue<AStarNode> fringe = new PriorityQueue<AStarNode>();
+		fringe.add(new AStarNode(start, null, 0, start.getEstimatedCost(goal)));
+		while(!fringe.isEmpty()) {
+			AStarNode node = fringe.poll();
+			if(!node.node.visited()) {
+				node.node.visited(true);
+				node.node.previous(node.previous);
+				if(node.node.equals(goal)) {break;}
+				for(Segment segment : node.node.outgoingSegments()) {
+					Node n;
+					if(segment.from().ID() == node.node.ID()) {
+						n = segment.to();
+					}else {
+						n = segment.from();
+					}
+					if(!n.visited()) {
+						double g = node.costFromStart + segment.length();
+						double f = g + n.getEstimatedCost(goal);
+						fringe.add(new AStarNode(n, node.node, g,f));
+					}
+				}
+			}
+		}
+		ArrayList<Segment> segments = new ArrayList<Segment>();
+		Node node = goal;
+		if(goal.previous() == null) {return null;}
+		while(!node.equals(start)) {
+			for(Segment segment :node.previous().outgoingSegments()) {
+				if(segment.from().ID() == node.ID() || segment.to().ID() == node.ID()) {
+					segments.add(segment);
+				}
+			}
+			node = node.previous();
+		}
+		Collections.reverse(segments);
+		return segments;
+		
+	}
+	/**
+	 * Returns an ArrayList of the lengths of all the segments and contains the total length of all segments at the end
+	 * @param segments
+	 * @return
+	 */
+	public ArrayList<Double> segmentLengths(ArrayList<Segment> segments){
+		double total = 0;
+		ArrayList<Double> lengths = new ArrayList<Double>();
+		for(Segment segment : segments) {
+			total += segment.length();
+			lengths.add(segment.length());
+		}
+		lengths.add(total);
+		return lengths;
+	}
+	
+	public Set<Node> articulationPoints(int rootIndex){
+		Set<Node> articulationPoints = new HashSet<Node>();
+		for(Node node : this.nodes) {
+			node.count(null);
+			node.previous(null);
+		}
+		int numberOfSubTrees = 0;
+		Node root = nodes.get(rootIndex);
+		root.count(0);
+		for(Node node : root.getNeighbours()) {
+			if(node.count() == null) {
+				List<Set<Node>> nodeSets = articulationPointsFromRoot(node, 1, root);
+				articulationPoints.addAll(nodeSets.get(0));
+				visitedNodes.add(root);
+				visitedNodes.addAll(nodeSets.get(1));
+				numberOfSubTrees++;
+			}
+			if(numberOfSubTrees > 1) {
+				articulationPoints.add(root);
+			}
+		}
+		return articulationPoints;
+	}
+
+	private List<Set<Node>> articulationPointsFromRoot(Node firstNode, int count, Node root) {
+		// TODO Auto-generated method stub
+		Set<Node> articulationPoints = new HashSet<Node>();
+		Set<Node> nodesVisited = new HashSet<Node>();
+		int number = count;
+		Stack<ArticulationPointNode> stack = new Stack<ArticulationPointNode>();
+		stack.push(new ArticulationPointNode(firstNode, count, new ArticulationPointNode(root, 0, null)));
+		while(!stack.isEmpty()) {
+			ArticulationPointNode node = stack.peek();
+			if(node.node.count() == null) {
+				node.node.count(node.count);
+				node.reachBack = node.count;
+				node.setChildren();
+			}else if(!node.children.isEmpty()) {
+				Node child = node.children.remove(0);
+				if(child.count() != null) {
+					node.reachBack = min(child.count(), node.reachBack);
+				}else {
+					number++;
+					stack.push(new ArticulationPointNode(child, number, node));
+				}
+			}else {
+				if(node.node.ID() != firstNode.ID()) {
+					node.previous.reachBack = min(node.reachBack, node.previous.reachBack);
+					if(node.reachBack >= node.previous.count) {
+						articulationPoints.add(node.previous.node);
+					}
+				}
+				nodesVisited.add(stack.pop().node);
+				
+			}
+			
+		}
+		List<Set<Node>> a = new ArrayList<Set<Node>>();
+		a.add(articulationPoints);
+		a.add(nodesVisited);
+		return a;
+	}
+
+	private Integer min(Integer count, Integer reachBack) {
+		if(reachBack == null || count < reachBack) {
+			return count;
+		}
+		return reachBack;
 	}
 
 	@Override
@@ -264,6 +417,15 @@ public class RoadMap extends GUI {
 			this.getTextOutputArea().setText("Failed to close reader reading road segments: "+ e.toString());
 		}
 		
+		this.articulationPoints = this.articulationPoints(0);
+		for(int i = 0; i < this.nodes.size(); i++) {
+			if(!this.visitedNodes.contains(this.nodes.get(i))) {
+				this.articulationPoints.addAll(this.articulationPoints(i));
+			}
+		}
+		this.getTextOutputArea().setText(""+articulationPoints.size());
+		
+		
 		if(polygons == null) {
 			return;
 		}
@@ -319,7 +481,10 @@ public class RoadMap extends GUI {
 			this.getTextOutputArea().setText("Failed to close reader reading polygons: "+ e.toString());
 		}
 		
+		
 	}
+	
+	
 	
 	public static void main(String[] args) {
 		new RoadMap();

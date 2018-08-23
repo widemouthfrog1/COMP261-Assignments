@@ -55,11 +55,11 @@ public class Segment {
 	}
 	
 	public Node from() {
-		return from.copy();
+		return from;
 	}
 	
 	public Node to() {
-		return to.copy();
+		return to;
 	}
 	
 	
