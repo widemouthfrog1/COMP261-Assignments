@@ -90,10 +90,22 @@ public class RoadMap extends GUI {
 			if(shortestRoute == null) {return;}
 			ArrayList<Double> lengths = this.segmentLengths(shortestRoute);
 			String text = "";
+			double length = 0;
+			String road = "";
 			for(int i = 0; i < shortestRoute.size(); i++) {
 				shortestRoute.get(i).highlight();
-				text += shortestRoute.get(i).road().name()+": "+lengths.get(i)+"km\n";
+				if(road.equals("")) {
+					road = shortestRoute.get(i).road().name();
+				}
+				if(shortestRoute.get(i).road().name().equals(road)) {
+					length += lengths.get(i);
+				}else {
+					text += shortestRoute.get(i-1).road().name()+": "+length+"km\n";
+					length = lengths.get(i);
+					road = shortestRoute.get(i).road().name();
+				}
 			}
+			text += shortestRoute.get(shortestRoute.size()-1).road().name()+": "+length+"km\n";
 			text += "Total: "+lengths.get(lengths.size()-1)+"km\n";
 			this.getTextOutputArea().setText(text);
 		}
