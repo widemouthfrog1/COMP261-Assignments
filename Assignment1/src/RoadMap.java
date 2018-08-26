@@ -37,6 +37,7 @@ public class RoadMap extends GUI {
 	Set<Node> articulationPoints = new HashSet<Node>();
 	Set<Node> visitedNodes = new HashSet<Node>();
 	Location origin = new Location(0,0);
+	boolean costIsDistance = true;
 	private double scale = 100;
 	private final double zoom = 2;
 	@Override
@@ -88,7 +89,12 @@ public class RoadMap extends GUI {
 			}
 			shortestRoute = this.aStarSearch(start, goal);
 			if(shortestRoute == null) {return;}
-			ArrayList<Double> lengths = this.segmentLengths(shortestRoute);
+			ArrayList<Double> costs;
+			if(this.costIsDistance) {
+				costs = this.segmentLengths(shortestRoute);
+			}else {
+				costs = this.segmentTimes(shortestRoute);
+			}
 			String text = "";
 			double length = 0;
 			String road = "";
@@ -98,15 +104,24 @@ public class RoadMap extends GUI {
 					road = shortestRoute.get(i).road().name();
 				}
 				if(shortestRoute.get(i).road().name().equals(road)) {
-					length += lengths.get(i);
+					length += costs.get(i);
 				}else {
-					text += shortestRoute.get(i-1).road().name()+": "+length+"km\n";
-					length = lengths.get(i);
+					if(this.costIsDistance) {
+						text += shortestRoute.get(i-1).road().name()+": "+length+"km One Way: "+shortestRoute.get(shortestRoute.size()-1).road().oneWay()+"\n";
+					}else {
+						text += shortestRoute.get(i-1).road().name()+": "+length+"hrs One Way: "+shortestRoute.get(shortestRoute.size()-1).road().oneWay()+"\n";
+					}
+					length = costs.get(i);
 					road = shortestRoute.get(i).road().name();
 				}
 			}
-			text += shortestRoute.get(shortestRoute.size()-1).road().name()+": "+length+"km\n";
-			text += "Total: "+lengths.get(lengths.size()-1)+"km\n";
+			if(this.costIsDistance) {
+				text += shortestRoute.get(shortestRoute.size()-1).road().name()+": "+length+"km One Way: "+shortestRoute.get(shortestRoute.size()-1).road().oneWay()+"\n";
+				text += "Total: "+costs.get(costs.size()-1)+"km\n";
+			}else {
+				text += shortestRoute.get(shortestRoute.size()-1).road().name()+": "+length+"hrs One Way: "+shortestRoute.get(shortestRoute.size()-1).road().oneWay()+"\n";
+				text += "Total: "+costs.get(costs.size()-1)+"hrs\n";
+			}
 			this.getTextOutputArea().setText(text);
 		}
 		
@@ -167,7 +182,15 @@ public class RoadMap extends GUI {
 		case WEST:
 			this.origin = Location.newFromPoint(new Point(origin.asPoint(origin, scale).x - PIXEL_DISTANCE, origin.asPoint(origin, scale).y), origin, scale);
 			break;
+		case DISTANCE:
+			this.costIsDistance = true;
+			break;
+		case TIME:
+			this.costIsDistance = false;
+			break;
 		}
+		
+			
 	}
 	
 	private void clearState() {
@@ -175,6 +198,7 @@ public class RoadMap extends GUI {
 		this.nodeIDMap.clear();
 		this.roadIDMap.clear();
 		this.roads.clear();
+		this.polygons.clear();
 		this.segments.clear();
 		this.roadTrie.clear();
 		this.origin = new Location(0,0);
@@ -189,8 +213,8 @@ public class RoadMap extends GUI {
 			n.visited(false);
 		}
 		
-		PriorityQueue<AStarNode> fringe = new PriorityQueue<AStarNode>();
-		fringe.add(new AStarNode(start, null, 0, start.getEstimatedCost(goal)));
+		PriorityQueue<AStarNode> fringe = new PriorityQueue<AStarNode>(/*new Comparator<AStarNode>() {public int compare(AStarNode a, AStarNode b) {return (int)(a.getEstimatedCostToGoal()-b.getEstimatedCostToGoal());}}*/);
+		fringe.add(new AStarNode(start, null, 0, start.getEstimatedCost(goal, this.costIsDistance)));
 		while(!fringe.isEmpty()) {
 			AStarNode node = fringe.poll();
 			if(!node.node.visited()) {
@@ -205,8 +229,13 @@ public class RoadMap extends GUI {
 						n = segment.from();
 					}
 					if(!n.visited()) {
-						double g = node.costFromStart + segment.length();
-						double f = g + n.getEstimatedCost(goal);
+						double g;
+						if(this.costIsDistance) {
+							g = node.getCostFromStart() + segment.length();
+						}else {
+							g = node.getCostFromStart() + segment.length()/(double)(segment.road().speedLimit());
+						}
+						double f = g + n.getEstimatedCost(goal, this.costIsDistance);
 						fringe.add(new AStarNode(n, node.node, g,f));
 					}
 				}
@@ -243,6 +272,22 @@ public class RoadMap extends GUI {
 		return lengths;
 	}
 	
+	/**
+	 * Returns an ArrayList of the time needed to traverse a segment and contains the total time needed to traverse all the segments at the end
+	 * @param segments
+	 * @return
+	 */
+	public ArrayList<Double> segmentTimes(ArrayList<Segment> segments){
+		double total = 0;
+		ArrayList<Double> times = new ArrayList<Double>();
+		for(Segment segment : segments) {
+			total += segment.length()/segment.road().speedLimit();
+			times.add(segment.length()/segment.road().speedLimit());
+		}
+		times.add(total);
+		return times;
+	}
+	
 	public Set<Node> articulationPoints(int rootIndex){
 		Set<Node> articulationPoints = new HashSet<Node>();
 		for(Node node : this.nodes) {
@@ -268,7 +313,6 @@ public class RoadMap extends GUI {
 	}
 
 	private List<Set<Node>> articulationPointsFromRoot(Node firstNode, int count, Node root) {
-		// TODO Auto-generated method stub
 		Set<Node> articulationPoints = new HashSet<Node>();
 		Set<Node> nodesVisited = new HashSet<Node>();
 		int number = count;

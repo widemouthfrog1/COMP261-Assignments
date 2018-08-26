@@ -3,7 +3,7 @@ import java.util.Set;
 
 public class Road {
 	private Set<Segment> segments = new HashSet<Segment>();
-	private int ID, speedLimit; //if speedLimit is -1, there is no speed limit
+	private int ID, speedLimit;
 	private String name, roadClass;
 	private boolean oneWay, car, pedestrian, bike;//car, pedestrian, and bike are true when these modes of transport CAN use this road
 	
@@ -30,7 +30,7 @@ public class Road {
 					break;
 			case 6: this.speedLimit = 110;
 					break;
-			case 7: this.speedLimit = -1;
+			case 7: this.speedLimit = 110;//I am going to take no speed limit as the max speed limit, hence 110
 					break;
 		}
 		switch(roadClass) {

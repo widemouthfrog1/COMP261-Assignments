@@ -7,7 +7,8 @@ import java.util.Set;
 
 
 public class Node {
-	private final int NODE_SIZE = 3;
+	private final int NODE_SIZE = 4;
+	public static final double MAXSPEED = 110;
 	private int ID;
 	private Point pos;
 	private Location location;
@@ -20,6 +21,7 @@ public class Node {
 	private boolean visited = false;
 	private Node previous = null;
 	private Integer count = null;
+	
 	
 	Node(int ID, double latitude, double longitude){
 		this.ID = ID;
@@ -107,8 +109,12 @@ public class Node {
 		return new Point(pos.x, pos.y);
 	}
 	
-	public double getEstimatedCost(Node goal) {
-		return this.location.distance(goal.location());
+	public double getEstimatedCost(Node goal, boolean heuristicIsDistance) {
+		if(heuristicIsDistance) {
+			return this.location.distance(goal.location());
+		}
+		//time = distance/velocity
+		return this.location.distance(goal.location())/MAXSPEED ;
 	}
 	
 	public boolean visited() {

@@ -47,7 +47,7 @@ public abstract class GUI {
 	 * called.
 	 */
 	public enum Move {
-		NORTH, SOUTH, EAST, WEST, ZOOM_IN, ZOOM_OUT
+		NORTH, SOUTH, EAST, WEST, ZOOM_IN, ZOOM_OUT, DISTANCE, TIME
 	};
 
 	// these are the methods you need to implement.
@@ -232,6 +232,22 @@ public abstract class GUI {
 				}
 			}
 		});
+		
+		JButton distance = new JButton("Distance");
+		distance.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent ev) {
+				onMove(Move.DISTANCE);
+				redraw();
+			}
+		});
+		
+		JButton time = new JButton("Time");
+		time.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent ev) {
+				onMove(Move.TIME);
+				redraw();
+			}
+		});
 
 		JButton west = new JButton("\u2190");
 		west.addActionListener(new ActionListener() {
@@ -337,7 +353,13 @@ public abstract class GUI {
 		// rigid areas are invisible components that can be used to space
 		// components out.
 		controls.add(Box.createRigidArea(new Dimension(15, 0)));
-
+		JPanel heuristicControls = new JPanel();
+		heuristicControls.setMaximumSize(new Dimension(50, 100));
+		heuristicControls.setLayout(new GridLayout(2, 1));
+		heuristicControls.add(distance);
+		heuristicControls.add(time);
+		controls.add(heuristicControls);
+		//heuristicControls.setLayout(new GridLayout(1, 3));
 		JPanel navigation = new JPanel();
 		navigation.setMaximumSize(new Dimension(150, 60));
 		navigation.setLayout(new GridLayout(2, 3));
