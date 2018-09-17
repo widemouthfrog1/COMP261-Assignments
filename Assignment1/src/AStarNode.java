@@ -16,7 +16,7 @@ public class AStarNode implements Comparable<AStarNode>{
 		if(this.estimatedCostToGoal > node.estimatedCostToGoal) {
 			return 1;
 		}
-		return 0;//(int)(this.estimatedCostToGoal-node.estimatedCostToGoal);
+		return 0;
 	}
 	public double getCostFromStart() {
 		return costFromStart;

@@ -5,7 +5,6 @@ import java.util.ArrayList;
 
 public class RoadMapPolygon {
 	private Color color;
-	private String label; //may be used later
 	private ArrayList<Location> coords;
 	private int endLevel;
 	
@@ -83,7 +82,6 @@ public class RoadMapPolygon {
 			this.color = Color.blue;
 			break;
 		}
-		this.label = label;
 		this.coords = coords;
 		
 	}

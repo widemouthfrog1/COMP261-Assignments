@@ -1,6 +1,5 @@
 import java.awt.Dimension;
 import java.awt.Graphics;
-import java.awt.MouseInfo;
 import java.awt.Point;
 import java.awt.event.MouseEvent;
 import java.io.BufferedReader;
@@ -10,7 +9,6 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -213,7 +211,7 @@ public class RoadMap extends GUI {
 			n.visited(false);
 		}
 		
-		PriorityQueue<AStarNode> fringe = new PriorityQueue<AStarNode>(/*new Comparator<AStarNode>() {public int compare(AStarNode a, AStarNode b) {return (int)(a.getEstimatedCostToGoal()-b.getEstimatedCostToGoal());}}*/);
+		PriorityQueue<AStarNode> fringe = new PriorityQueue<AStarNode>();
 		fringe.add(new AStarNode(start, null, 0, start.getEstimatedCost(goal, this.costIsDistance)));
 		while(!fringe.isEmpty()) {
 			AStarNode node = fringe.poll();
