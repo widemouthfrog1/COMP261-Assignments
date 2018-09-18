@@ -1,8 +1,12 @@
+package code.src;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.*;
 import java.util.regex.*;
 import javax.swing.JFileChooser;
+
+import nodes.*;
 
 /**
  * The parser and interpreter. The top level parse function, a main method for
@@ -81,17 +85,44 @@ public class Parser {
 	static Pattern CLOSEPAREN = Pattern.compile("\\)");
 	static Pattern OPENBRACE = Pattern.compile("\\{");
 	static Pattern CLOSEBRACE = Pattern.compile("\\}");
+	static Pattern ACTION = Pattern.compile("move|turnL|turnR|takeFuel|wait");
 
 	/**
 	 * PROG ::= STMT+
 	 */
 	static RobotProgramNode parseProgram(Scanner s) {
 		// THE PARSER GOES HERE
-
-		return null;
+		ArrayList<StatementNode> statements = new ArrayList<StatementNode>();
+		//STMT ::= ACT ";" | LOOP
+		while(s.hasNext()) {
+			statements.add(Parser.makeStatement(s));
+		}
+		RobotProgramNode program = new ProgramNode(statements);
+		return program;
+	}
+	
+	public static StatementNode makeStatement(Scanner s) {
+		StatementNode statement = null;
+		if(Parser.checkFor("loop", s)) {
+			ArrayList<StatementNode> blockStatements = new ArrayList<StatementNode>();
+			Parser.require(OPENBRACE, "\"{\" expected", s);
+			while(!Parser.checkFor(CLOSEBRACE, s)) {
+				blockStatements.add(Parser.makeStatement(s));
+			}
+			BlockNode block = new BlockNode(blockStatements);
+			LoopNode loop = new LoopNode(block);
+			statement = new StatementNode(loop);
+		}else {
+			ActionNode action = new ActionNode(Parser.require(ACTION, "Action expected", s));
+			Parser.require(";", "Semicolon expected", s);
+			statement = new StatementNode(action);
+		}
+		return statement;
 	}
 
 	// utility methods for the parser
+	
+	
 
 	/**
 	 * Report a failure in the parser.
@@ -104,11 +135,7 @@ public class Parser {
 		throw new ParserFailureException(msg + "...");
 	}
 
-	/**
-	 * Requires that the next token matches a pattern if it matches, it consumes
-	 * and returns the token, if not, it throws an exception with an error
-	 * message
-	 */
+	
 	static String require(String p, String message, Scanner s) {
 		if (s.hasNext(p)) {
 			return s.next();
@@ -116,7 +143,12 @@ public class Parser {
 		fail(message, s);
 		return null;
 	}
-
+	
+	/**
+	 * Requires that the next token matches a pattern if it matches, it consumes
+	 * and returns the token, if not, it throws an exception with an error
+	 * message
+	 */
 	static String require(Pattern p, String message, Scanner s) {
 		if (s.hasNext(p)) {
 			return s.next();
@@ -125,11 +157,7 @@ public class Parser {
 		return null;
 	}
 
-	/**
-	 * Requires that the next token matches a pattern (which should only match a
-	 * number) if it matches, it consumes and returns the token as an integer if
-	 * not, it throws an exception with an error message
-	 */
+	
 	static int requireInt(String p, String message, Scanner s) {
 		if (s.hasNext(p) && s.hasNextInt()) {
 			return s.nextInt();
@@ -137,7 +165,12 @@ public class Parser {
 		fail(message, s);
 		return -1;
 	}
-
+	
+	/**
+	 * Requires that the next token matches a pattern (which should only match a
+	 * number) if it matches, it consumes and returns the token as an integer if
+	 * not, it throws an exception with an error message
+	 */
 	static int requireInt(Pattern p, String message, Scanner s) {
 		if (s.hasNext(p) && s.hasNextInt()) {
 			return s.nextInt();
@@ -146,11 +179,7 @@ public class Parser {
 		return -1;
 	}
 
-	/**
-	 * Checks whether the next token in the scanner matches the specified
-	 * pattern, if so, consumes the token and return true. Otherwise returns
-	 * false without consuming anything.
-	 */
+	
 	static boolean checkFor(String p, Scanner s) {
 		if (s.hasNext(p)) {
 			s.next();
@@ -159,7 +188,12 @@ public class Parser {
 			return false;
 		}
 	}
-
+	
+	/**
+	 * Checks whether the next token in the scanner matches the specified
+	 * pattern, if so, consumes the token and return true. Otherwise returns
+	 * false without consuming anything.
+	 */
 	static boolean checkFor(Pattern p, Scanner s) {
 		if (s.hasNext(p)) {
 			s.next();
