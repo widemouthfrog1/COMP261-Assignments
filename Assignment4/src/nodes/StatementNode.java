@@ -4,7 +4,7 @@ import code.src.Robot;
 import code.src.RobotProgramNode;
 
 public class StatementNode implements RobotProgramNode {
-	private RobotProgramNode node = null;
+	private RobotProgramNode node;
 	
 	public StatementNode(RobotProgramNode node) {
 		this.node = node;
@@ -19,7 +19,7 @@ public class StatementNode implements RobotProgramNode {
 	public String toString() {
 		if(node instanceof ActionNode) {
 			return node.toString()+";";
-		}else if(node instanceof LoopNode){
+		}else if(node instanceof LoopNode || node instanceof IfNode || node instanceof WhileNode){
 			return node.toString();
 		}else {
 			return "Node Error";

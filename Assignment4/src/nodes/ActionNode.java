@@ -4,7 +4,7 @@ import code.src.Robot;
 import code.src.RobotProgramNode;
 
 public class ActionNode implements RobotProgramNode {
-	private enum Action {MOVE, TURNLEFT, TURNRIGHT, TAKEFUEL, WAIT}
+	private enum Action {MOVE, TURNLEFT, TURNRIGHT, TURNAROUND, SHIELDON, SHIELDOFF, TAKEFUEL, WAIT}
 	private Action action = null;
 	
 	public ActionNode(String action) {
@@ -14,6 +14,12 @@ public class ActionNode implements RobotProgramNode {
 			this.action = Action.TURNLEFT;
 		}else if(action.equals("turnR")) {
 			this.action = Action.TURNRIGHT;
+		}else if(action.equals("turnAround")) {
+			this.action = Action.TURNAROUND;
+		}else if(action.equals("shieldOn")) {
+			this.action = Action.SHIELDON;
+		}else if(action.equals("shieldOff")) {
+			this.action = Action.SHIELDOFF;
 		}else if(action.equals("takeFuel")) {
 			this.action = Action.TAKEFUEL;
 		}else if(action.equals("wait")) {
@@ -38,8 +44,17 @@ public class ActionNode implements RobotProgramNode {
 		case TURNRIGHT:
 			robot.turnRight();
 			break;
+		case TURNAROUND:
+			robot.turnAround();
+			break;
 		case WAIT:
 			robot.idleWait();
+			break;
+		case SHIELDOFF:
+			robot.setShield(true);
+			break;
+		case SHIELDON:
+			robot.setShield(false);
 			break;
 		default:
 			break;
@@ -60,8 +75,15 @@ public class ActionNode implements RobotProgramNode {
 			return "turnR";
 		case WAIT:
 			return "wait";
+		case SHIELDOFF:
+			return "shieldOff";
+		case SHIELDON:
+			return "shieldOn";
+		case TURNAROUND:
+			return "turnAround";
 		default:
 			return "Error";
+			
 		}
 	}
 

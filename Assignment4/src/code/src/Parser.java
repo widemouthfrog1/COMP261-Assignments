@@ -85,8 +85,9 @@ public class Parser {
 	static Pattern CLOSEPAREN = Pattern.compile("\\)");
 	static Pattern OPENBRACE = Pattern.compile("\\{");
 	static Pattern CLOSEBRACE = Pattern.compile("\\}");
-	static Pattern ACTION = Pattern.compile("move|turnL|turnR|takeFuel|wait");
-
+	static Pattern ACTION = Pattern.compile("move|turnL|turnR|takeFuel|wait|shieldOn|shieldOff|turnAround");
+	static Pattern RELOP = Pattern.compile("gt|lt|eq");
+	static Pattern SENSOR = Pattern.compile("fuelLeft|oppLR|oppFB|numBarrels|barrelLR|barrelFB|wallDist");
 	/**
 	 * PROG ::= STMT+
 	 */
@@ -104,20 +105,44 @@ public class Parser {
 	public static StatementNode makeStatement(Scanner s) {
 		StatementNode statement = null;
 		if(Parser.checkFor("loop", s)) {
-			ArrayList<StatementNode> blockStatements = new ArrayList<StatementNode>();
-			Parser.require(OPENBRACE, "\"{\" expected", s);
-			while(!Parser.checkFor(CLOSEBRACE, s)) {
-				blockStatements.add(Parser.makeStatement(s));
-			}
-			BlockNode block = new BlockNode(blockStatements);
-			LoopNode loop = new LoopNode(block);
-			statement = new StatementNode(loop);
-		}else {
+			statement = new StatementNode(new LoopNode(Parser.makeBlock(s)));
+		}else if(Parser.checkFor("if", s)){
+			Parser.require(OPENPAREN, "\"(\" expected", s);
+			ConditionNode condition = Parser.makeCondition(s);
+			Parser.require(CLOSEPAREN, "\")\" expected", s);
+			BlockNode block = Parser.makeBlock(s);
+			statement = new StatementNode(new IfNode(condition, block));
+		}else if(Parser.checkFor("while", s)){
+			Parser.require(OPENPAREN, "\"(\" expected", s);
+			ConditionNode condition = Parser.makeCondition(s);
+			Parser.require(CLOSEPAREN, "\")\" expected", s);
+			BlockNode block = Parser.makeBlock(s);
+			statement = new StatementNode(new WhileNode(condition, block));
+		}else{
 			ActionNode action = new ActionNode(Parser.require(ACTION, "Action expected", s));
 			Parser.require(";", "Semicolon expected", s);
 			statement = new StatementNode(action);
 		}
 		return statement;
+	}
+	
+	public static BlockNode makeBlock(Scanner s) {
+		ArrayList<StatementNode> blockStatements = new ArrayList<StatementNode>();
+		Parser.require(OPENBRACE, "\"{\" expected", s);
+		while(!Parser.checkFor(CLOSEBRACE, s)) {
+			blockStatements.add(Parser.makeStatement(s));
+		}
+		return new BlockNode(blockStatements);
+	}
+	
+	public static ConditionNode makeCondition(Scanner s) {
+		String name = Parser.require(RELOP, "Relational operator expected", s);
+		Parser.require(OPENPAREN, "\"(\" expected", s);
+		SensorNode sensor = new SensorNode(Parser.require(SENSOR, "Sensor expected", s));
+		Parser.require(",", "\",\" expected", s);
+		int number = Integer.parseInt(Parser.require(NUMPAT, "Number expected", s));
+		Parser.require(CLOSEPAREN, "\")\" expected", s);
+		return new ConditionNode(name, sensor, number);
 	}
 
 	// utility methods for the parser
