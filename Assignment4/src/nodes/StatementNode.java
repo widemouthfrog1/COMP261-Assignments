@@ -6,7 +6,19 @@ import code.src.RobotProgramNode;
 public class StatementNode implements RobotProgramNode {
 	private RobotProgramNode node;
 	
-	public StatementNode(RobotProgramNode node) {
+	public StatementNode(ActionNode node) {
+		this.node = node;
+	}
+	
+	public StatementNode(LoopNode node) {
+		this.node = node;
+	}
+	
+	public StatementNode(WhileNode node) {
+		this.node = node;
+	}
+	
+	public StatementNode(IfNode node) {
 		this.node = node;
 	}
 	

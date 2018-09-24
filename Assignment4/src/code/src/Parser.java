@@ -88,6 +88,9 @@ public class Parser {
 	static Pattern ACTION = Pattern.compile("move|turnL|turnR|takeFuel|wait|shieldOn|shieldOff|turnAround");
 	static Pattern RELOP = Pattern.compile("gt|lt|eq");
 	static Pattern SENSOR = Pattern.compile("fuelLeft|oppLR|oppFB|numBarrels|barrelLR|barrelFB|wallDist");
+	static Pattern OP = Pattern.compile("add|sub|mul|div");
+	static Pattern EXPROP = Pattern.compile("and|or|not");
+	
 	/**
 	 * PROG ::= STMT+
 	 */
@@ -96,53 +99,97 @@ public class Parser {
 		ArrayList<StatementNode> statements = new ArrayList<StatementNode>();
 		//STMT ::= ACT ";" | LOOP
 		while(s.hasNext()) {
-			statements.add(Parser.makeStatement(s));
+			statements.add(Parser.parseStatement(s));
 		}
 		RobotProgramNode program = new ProgramNode(statements);
 		return program;
 	}
 	
-	public static StatementNode makeStatement(Scanner s) {
+	public static StatementNode parseStatement(Scanner s) {
 		StatementNode statement = null;
 		if(Parser.checkFor("loop", s)) {
-			statement = new StatementNode(new LoopNode(Parser.makeBlock(s)));
+			statement = new StatementNode(new LoopNode(Parser.parseBlock(s)));
 		}else if(Parser.checkFor("if", s)){
 			Parser.require(OPENPAREN, "\"(\" expected", s);
-			ConditionNode condition = Parser.makeCondition(s);
+			ConditionNode condition = Parser.parseCondition(s);
 			Parser.require(CLOSEPAREN, "\")\" expected", s);
-			BlockNode block = Parser.makeBlock(s);
-			statement = new StatementNode(new IfNode(condition, block));
+			BlockNode block = Parser.parseBlock(s);
+			
+			if(Parser.checkFor("else", s)) {
+				statement = new StatementNode(new IfNode(condition, block, Parser.parseBlock(s)));
+			}else {
+				statement = new StatementNode(new IfNode(condition, block));
+			}
 		}else if(Parser.checkFor("while", s)){
 			Parser.require(OPENPAREN, "\"(\" expected", s);
-			ConditionNode condition = Parser.makeCondition(s);
+			ConditionNode condition = Parser.parseCondition(s);
 			Parser.require(CLOSEPAREN, "\")\" expected", s);
-			BlockNode block = Parser.makeBlock(s);
+			BlockNode block = Parser.parseBlock(s);
 			statement = new StatementNode(new WhileNode(condition, block));
 		}else{
-			ActionNode action = new ActionNode(Parser.require(ACTION, "Action expected", s));
+			String action = Parser.require(ACTION, "Action expected", s);
+			ActionNode node;
+			if(Parser.checkFor(OPENPAREN, s)) {
+				node = new ActionNode(action, Parser.parseExpression(s));
+				Parser.require(CLOSEPAREN, "\")\" expected", s);
+			}else {
+				node = new ActionNode(action);
+			}
 			Parser.require(";", "Semicolon expected", s);
-			statement = new StatementNode(action);
+			statement = new StatementNode(node);
 		}
 		return statement;
 	}
 	
-	public static BlockNode makeBlock(Scanner s) {
+	public static BlockNode parseBlock(Scanner s) {
 		ArrayList<StatementNode> blockStatements = new ArrayList<StatementNode>();
 		Parser.require(OPENBRACE, "\"{\" expected", s);
 		while(!Parser.checkFor(CLOSEBRACE, s)) {
-			blockStatements.add(Parser.makeStatement(s));
+			blockStatements.add(Parser.parseStatement(s));
 		}
 		return new BlockNode(blockStatements);
 	}
 	
-	public static ConditionNode makeCondition(Scanner s) {
+	public static ConditionNode parseCondition(Scanner s) {
+		if(s.hasNext(EXPROP)) {
+			String operator = s.next();
+			Parser.require(OPENPAREN, "\"(\" expected", s);
+			ConditionNode condition1 = Parser.parseCondition(s);
+			if(Parser.checkFor(CLOSEPAREN, s)) {
+				return new ConditionNode(operator, condition1);
+			}
+			Parser.require(",", "\",\" expected", s);
+			ConditionNode condition2 = Parser.parseCondition(s);
+			Parser.require(CLOSEPAREN, "\")\" expected", s);
+			return new ConditionNode(operator, condition1, condition2);
+		}
 		String name = Parser.require(RELOP, "Relational operator expected", s);
 		Parser.require(OPENPAREN, "\"(\" expected", s);
-		SensorNode sensor = new SensorNode(Parser.require(SENSOR, "Sensor expected", s));
+		ExpressionNode expression1 = Parser.parseExpression(s);
 		Parser.require(",", "\",\" expected", s);
-		int number = Integer.parseInt(Parser.require(NUMPAT, "Number expected", s));
+		ExpressionNode expression2 = Parser.parseExpression(s);
 		Parser.require(CLOSEPAREN, "\")\" expected", s);
-		return new ConditionNode(name, sensor, number);
+		return new ConditionNode(name, expression1, expression2);
+	}
+	
+	public static ExpressionNode parseExpression(Scanner s) {
+		ExpressionNode node = null;
+		if(s.hasNext(NUMPAT)) {
+			node = new ExpressionNode(s.nextInt());
+		}else if(s.hasNext(SENSOR)) {
+			node = new ExpressionNode(new SensorNode(s.next()));
+		}else if(s.hasNext(OP)) {
+			String operation = s.next();
+			Parser.require(OPENPAREN, "\"(\" expected", s);
+			ExpressionNode expression1 = Parser.parseExpression(s);
+			Parser.require(",", "Comma expected", s);
+			ExpressionNode expression2 = Parser.parseExpression(s);
+			Parser.require(CLOSEPAREN, "\")\" expected", s);
+			node = new ExpressionNode(operation, expression1, expression2);
+		}else {
+			fail("Expression expected", s);
+		}
+		return node;
 	}
 
 	// utility methods for the parser
