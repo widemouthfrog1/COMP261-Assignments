@@ -87,50 +87,77 @@ public class Parser {
 	static Pattern CLOSEBRACE = Pattern.compile("\\}");
 	static Pattern ACTION = Pattern.compile("move|turnL|turnR|takeFuel|wait|shieldOn|shieldOff|turnAround");
 	static Pattern RELOP = Pattern.compile("gt|lt|eq");
+	static Pattern INFIXRELOP = Pattern.compile(">|<|=");
 	static Pattern SENSOR = Pattern.compile("fuelLeft|oppLR|oppFB|numBarrels|barrelLR|barrelFB|wallDist");
 	static Pattern OP = Pattern.compile("add|sub|mul|div");
+	static Pattern INFIXOP = Pattern.compile("+|-|*|/");
 	static Pattern EXPROP = Pattern.compile("and|or|not");
+	static Pattern INFIXEXPROP = Pattern.compile("&&|\\|\\||!");
+	static Pattern VARPAT = Pattern.compile("\\$[A-Za-z][A-Za-z0-9]*");
+	
 	
 	/**
 	 * PROG ::= STMT+
 	 */
 	static RobotProgramNode parseProgram(Scanner s) {
 		// THE PARSER GOES HERE
+		Map<String, VariableNode> variables = new HashMap<String, VariableNode>();
 		ArrayList<StatementNode> statements = new ArrayList<StatementNode>();
 		//STMT ::= ACT ";" | LOOP
 		while(s.hasNext()) {
-			statements.add(Parser.parseStatement(s));
+			statements.add(Parser.parseStatement(s, variables));
 		}
 		RobotProgramNode program = new ProgramNode(statements);
 		return program;
 	}
 	
-	public static StatementNode parseStatement(Scanner s) {
+	public static StatementNode parseStatement(Scanner s, Map<String, VariableNode> variables) {
 		StatementNode statement = null;
 		if(Parser.checkFor("loop", s)) {
-			statement = new StatementNode(new LoopNode(Parser.parseBlock(s)));
+			statement = new StatementNode(new LoopNode(Parser.parseBlock(s, variables)));
 		}else if(Parser.checkFor("if", s)){
 			Parser.require(OPENPAREN, "\"(\" expected", s);
-			ConditionNode condition = Parser.parseCondition(s);
+			ConditionNode condition = Parser.parseCondition(s, variables);
 			Parser.require(CLOSEPAREN, "\")\" expected", s);
-			BlockNode block = Parser.parseBlock(s);
+			BlockNode block = Parser.parseBlock(s, variables);
+			ArrayList<ConditionNode> conditions = new ArrayList<ConditionNode>();
+			ArrayList<BlockNode> blocks = new ArrayList<BlockNode>();
+			while(Parser.checkFor("elif", s)) {
+				Parser.require(OPENPAREN, "\"(\" expected", s);
+				conditions.add(Parser.parseCondition(s, variables));
+				Parser.require(CLOSEPAREN, "\")\" expected", s);
+				blocks.add(Parser.parseBlock(s, variables));
+			}
 			
 			if(Parser.checkFor("else", s)) {
-				statement = new StatementNode(new IfNode(condition, block, Parser.parseBlock(s)));
+				statement = new StatementNode(new IfNode(condition, block, conditions, blocks, Parser.parseBlock(s, variables)));
 			}else {
-				statement = new StatementNode(new IfNode(condition, block));
+				statement = new StatementNode(new IfNode(condition, block, conditions, blocks));
 			}
 		}else if(Parser.checkFor("while", s)){
 			Parser.require(OPENPAREN, "\"(\" expected", s);
-			ConditionNode condition = Parser.parseCondition(s);
+			ConditionNode condition = Parser.parseCondition(s, variables);
 			Parser.require(CLOSEPAREN, "\")\" expected", s);
-			BlockNode block = Parser.parseBlock(s);
+			BlockNode block = Parser.parseBlock(s, variables);
 			statement = new StatementNode(new WhileNode(condition, block));
+		}else if(s.hasNext(VARPAT)){
+			String variable = s.next();
+			Parser.require("=", "\"=\" expected", s);
+			ExpressionNode expression = Parser.parseExpression(s, variables);
+			AssignmentNode assignment;
+			if(variables.containsKey(variable)) {
+				assignment = new AssignmentNode(variables.get(variable), expression);
+			}else {
+				variables.put(variable, new VariableNode(variable));
+				assignment = new AssignmentNode(variables.get(variable), expression);
+			}
+			statement = new StatementNode(assignment);
+			Parser.require(";", "Semicolon expected", s);
 		}else{
 			String action = Parser.require(ACTION, "Action expected", s);
 			ActionNode node;
 			if(Parser.checkFor(OPENPAREN, s)) {
-				node = new ActionNode(action, Parser.parseExpression(s));
+				node = new ActionNode(action, Parser.parseExpression(s, variables));
 				Parser.require(CLOSEPAREN, "\")\" expected", s);
 			}else {
 				node = new ActionNode(action);
@@ -141,55 +168,73 @@ public class Parser {
 		return statement;
 	}
 	
-	public static BlockNode parseBlock(Scanner s) {
+	public static BlockNode parseBlock(Scanner s, Map<String, VariableNode> variables) {
 		ArrayList<StatementNode> blockStatements = new ArrayList<StatementNode>();
 		Parser.require(OPENBRACE, "\"{\" expected", s);
 		while(!Parser.checkFor(CLOSEBRACE, s)) {
-			blockStatements.add(Parser.parseStatement(s));
+			blockStatements.add(Parser.parseStatement(s, variables));
 		}
 		return new BlockNode(blockStatements);
 	}
 	
-	public static ConditionNode parseCondition(Scanner s) {
+	public static ConditionNode parseCondition(Scanner s, Map<String, VariableNode> variables) {
 		if(s.hasNext(EXPROP)) {
 			String operator = s.next();
 			Parser.require(OPENPAREN, "\"(\" expected", s);
-			ConditionNode condition1 = Parser.parseCondition(s);
+			ConditionNode condition1 = Parser.parseCondition(s, variables);
 			if(Parser.checkFor(CLOSEPAREN, s)) {
 				return new ConditionNode(operator, condition1);
 			}
 			Parser.require(",", "\",\" expected", s);
-			ConditionNode condition2 = Parser.parseCondition(s);
+			ConditionNode condition2 = Parser.parseCondition(s, variables);
 			Parser.require(CLOSEPAREN, "\")\" expected", s);
 			return new ConditionNode(operator, condition1, condition2);
 		}
 		String name = Parser.require(RELOP, "Relational operator expected", s);
 		Parser.require(OPENPAREN, "\"(\" expected", s);
-		ExpressionNode expression1 = Parser.parseExpression(s);
+		ExpressionNode expression1 = Parser.parseExpression(s, variables);
 		Parser.require(",", "\",\" expected", s);
-		ExpressionNode expression2 = Parser.parseExpression(s);
+		ExpressionNode expression2 = Parser.parseExpression(s, variables);
 		Parser.require(CLOSEPAREN, "\")\" expected", s);
 		return new ConditionNode(name, expression1, expression2);
 	}
 	
-	public static ExpressionNode parseExpression(Scanner s) {
+	public static ExpressionNode parseExpression(Scanner s, Map<String, VariableNode> variables) {
 		ExpressionNode node = null;
 		if(s.hasNext(NUMPAT)) {
 			node = new ExpressionNode(s.nextInt());
 		}else if(s.hasNext(SENSOR)) {
-			node = new ExpressionNode(new SensorNode(s.next()));
+			node = new ExpressionNode(Parser.parseSensor(s, variables));
+		}else if(s.hasNext(VARPAT)) {
+			String variable = s.next();
+			if(variables.containsKey(variable)) {
+				node = new ExpressionNode(variables.get(variable));
+			}else {
+				variables.put(variable, new VariableNode(variable));
+				node = new ExpressionNode(variables.get(variable));
+			}
 		}else if(s.hasNext(OP)) {
 			String operation = s.next();
 			Parser.require(OPENPAREN, "\"(\" expected", s);
-			ExpressionNode expression1 = Parser.parseExpression(s);
+			ExpressionNode expression1 = Parser.parseExpression(s, variables);
 			Parser.require(",", "Comma expected", s);
-			ExpressionNode expression2 = Parser.parseExpression(s);
+			ExpressionNode expression2 = Parser.parseExpression(s, variables);
 			Parser.require(CLOSEPAREN, "\")\" expected", s);
 			node = new ExpressionNode(operation, expression1, expression2);
 		}else {
 			fail("Expression expected", s);
 		}
 		return node;
+	}
+	
+	public static SensorNode parseSensor(Scanner s, Map<String, VariableNode> variables) {
+		String sensor = s.next();
+		if(Parser.checkFor(OPENPAREN, s)) {
+			ExpressionNode expression = Parser.parseExpression(s, variables);
+			Parser.require(CLOSEPAREN, "\")\" expected", s);
+			return new SensorNode(sensor, expression);
+		}
+		return new SensorNode(sensor, null);
 	}
 
 	// utility methods for the parser

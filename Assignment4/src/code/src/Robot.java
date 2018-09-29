@@ -350,9 +350,9 @@ public class Robot {
 		targetDir = dir;
 		targetFuel = fuel;
 		try {
-			robotImage1 = ImageIO.read(new File("assets/robot_" + colour + "_1.png"));
-			robotImage2 = ImageIO.read(new File("assets/robot_" + colour + "_2.png"));
-			shieldImage = ImageIO.read(new File("assets/shield.png"));
+			robotImage1 = ImageIO.read(new File("C:\\Users\\Karl Bennett\\Desktop\\COMP261 Assignments\\Assignment4\\src\\code\\assets\\robot_" + colour + "_1.png"));
+			robotImage2 = ImageIO.read(new File("C:\\Users\\Karl Bennett\\Desktop\\COMP261 Assignments\\Assignment4\\src\\code\\assets\\robot_" + colour + "_2.png"));
+			shieldImage = ImageIO.read(new File("C:\\Users\\Karl Bennett\\Desktop\\COMP261 Assignments\\Assignment4\\src\\code\\assets\\shield.png"));
 		} catch (IOException e) {
 			e.printStackTrace();
 		}

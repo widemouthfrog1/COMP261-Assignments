@@ -25,13 +25,13 @@ public class BlockNode implements RobotProgramNode {
 	public String toString() {
 		String statements = "{\n";
 		for(int i = 0; i < this.statements.size(); i++) {
-			statements += "\n\t";
+			statements += "\t";
 			statements += this.statements.get(i).toString();
 			if(i != this.statements.size()-1) {
 				statements += " ";
 			}
 		}
-		statements += "\n}";
+		statements += "\n}\n";
 		return statements;
 	}
 

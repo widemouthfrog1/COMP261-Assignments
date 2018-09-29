@@ -5,12 +5,17 @@ import code.src.Robot;
 
 public class ExpressionNode {
 	Integer num = null;
+	VariableNode variable = null;
 	SensorNode sensor = null;
 	String operation = null;
 	ExpressionNode expression1 = null, expression2 = null;
 	
 	public ExpressionNode(int num) {
 		this.num = num;
+	}
+	
+	public ExpressionNode(VariableNode variable) {
+		this.variable = variable;
 	}
 	
 	public ExpressionNode(SensorNode sensor) {
@@ -23,8 +28,10 @@ public class ExpressionNode {
 	}
 	
 	public int evaluate(Robot robot) {
-		if(this.num != -1) {
+		if(this.num != null) {
 			return this.num;
+		}else if(this.variable != null) {
+			return this.variable.evaluate(robot);
 		}else if(this.sensor != null) {
 			return this.sensor.evaluate(robot);
 		}else if(this.operation != null) {
@@ -47,10 +54,12 @@ public class ExpressionNode {
 	public String toString() {
 		if(this.num != null) {
 			return this.num.toString();
+		}else if(this.variable != null){
+			return this.variable.toString();
 		}else if(this.sensor != null) {
 			return this.sensor.toString();
 		}else if(this.operation != null) {
-			return this.operation+"("+this.expression1.toString()+","+this.expression2.toString()+")";
+			return this.operation+"("+this.expression1+","+this.expression2+")";
 		}else {
 			throw new ParserFailureException("toString error");
 		}

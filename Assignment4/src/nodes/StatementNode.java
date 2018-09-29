@@ -22,6 +22,10 @@ public class StatementNode implements RobotProgramNode {
 		this.node = node;
 	}
 	
+	public StatementNode(AssignmentNode node) {
+		this.node = node;
+	}
+
 	@Override
 	public void execute(Robot robot) {
 		node.execute(robot);
@@ -29,8 +33,8 @@ public class StatementNode implements RobotProgramNode {
 	
 	@Override
 	public String toString() {
-		if(node instanceof ActionNode) {
-			return node.toString()+";";
+		if(node instanceof ActionNode || node instanceof AssignmentNode) {
+			return node.toString()+";\n";
 		}else if(node instanceof LoopNode || node instanceof IfNode || node instanceof WhileNode){
 			return node.toString();
 		}else {

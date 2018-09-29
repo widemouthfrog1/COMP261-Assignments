@@ -1,14 +1,24 @@
 package nodes;
 
 import code.src.Robot;
-import code.src.RobotProgramNode;
 
-public class VariableNode implements RobotProgramNode {
-
-	@Override
-	public void execute(Robot robot) {
-		// TODO Auto-generated method stub
-		
+public class VariableNode {
+	private int value = 0;
+	private String name;
+	public VariableNode(String name){
+		this.name = name;
 	}
-
+	
+	public void setValue(int value) {
+		this.value = value;
+	}
+	
+	public int evaluate(Robot robot) {
+		return this.value;
+	}
+	
+	@Override
+	public String toString() {
+		return name;
+	}
 }
