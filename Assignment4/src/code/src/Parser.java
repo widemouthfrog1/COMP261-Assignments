@@ -92,7 +92,7 @@ public class Parser {
 	static Pattern OP = Pattern.compile("add|sub|mul|div");
 	static Pattern INFIXOP = Pattern.compile("+|-|*|/");
 	static Pattern EXPROP = Pattern.compile("and|or|not");
-	static Pattern INFIXEXPROP = Pattern.compile("&&|\\|\\||!");
+	static Pattern INFIXEXPROP = Pattern.compile("&&|\\|\\");
 	static Pattern VARPAT = Pattern.compile("\\$[A-Za-z][A-Za-z0-9]*");
 	
 	
@@ -143,7 +143,7 @@ public class Parser {
 		}else if(s.hasNext(VARPAT)){
 			String variable = s.next();
 			Parser.require("=", "\"=\" expected", s);
-			ExpressionNode expression = Parser.parseExpression(s, variables);
+			ExpressionNode expression = Parser.parseExpression(s, variables, true);
 			AssignmentNode assignment;
 			if(variables.containsKey(variable)) {
 				assignment = new AssignmentNode(variables.get(variable), expression);
@@ -157,7 +157,7 @@ public class Parser {
 			String action = Parser.require(ACTION, "Action expected", s);
 			ActionNode node;
 			if(Parser.checkFor(OPENPAREN, s)) {
-				node = new ActionNode(action, Parser.parseExpression(s, variables));
+				node = new ActionNode(action, Parser.parseExpression(s, variables, true));
 				Parser.require(CLOSEPAREN, "\")\" expected", s);
 			}else {
 				node = new ActionNode(action);
@@ -192,17 +192,20 @@ public class Parser {
 		}
 		String name = Parser.require(RELOP, "Relational operator expected", s);
 		Parser.require(OPENPAREN, "\"(\" expected", s);
-		ExpressionNode expression1 = Parser.parseExpression(s, variables);
+		ExpressionNode expression1 = Parser.parseExpression(s, variables, true);
 		Parser.require(",", "\",\" expected", s);
-		ExpressionNode expression2 = Parser.parseExpression(s, variables);
+		ExpressionNode expression2 = Parser.parseExpression(s, variables, true);
 		Parser.require(CLOSEPAREN, "\")\" expected", s);
 		return new ConditionNode(name, expression1, expression2);
 	}
 	
-	public static ExpressionNode parseExpression(Scanner s, Map<String, VariableNode> variables) {
+	public static ExpressionNode parseExpression(Scanner s, Map<String, VariableNode> variables, boolean infix) {
 		ExpressionNode node = null;
 		if(s.hasNext(NUMPAT)) {
 			node = new ExpressionNode(s.nextInt());
+		}else if(s.hasNext(OPENPAREN)) {
+			node = new ExpressionNode(Parser.parseExpression(s, variables, true));
+			Parser.require(CLOSEPAREN, "\")\" expected", s);
 		}else if(s.hasNext(SENSOR)) {
 			node = new ExpressionNode(Parser.parseSensor(s, variables));
 		}else if(s.hasNext(VARPAT)) {
@@ -216,13 +219,50 @@ public class Parser {
 		}else if(s.hasNext(OP)) {
 			String operation = s.next();
 			Parser.require(OPENPAREN, "\"(\" expected", s);
-			ExpressionNode expression1 = Parser.parseExpression(s, variables);
+			ExpressionNode expression1 = Parser.parseExpression(s, variables, true);
 			Parser.require(",", "Comma expected", s);
-			ExpressionNode expression2 = Parser.parseExpression(s, variables);
+			ExpressionNode expression2 = Parser.parseExpression(s, variables, true);
 			Parser.require(CLOSEPAREN, "\")\" expected", s);
 			node = new ExpressionNode(operation, expression1, expression2);
 		}else {
 			fail("Expression expected", s);
+		}
+		if(infix) {
+			ArrayList<String> operators = new ArrayList<String>();
+			ArrayList<ExpressionNode> expressions = new ArrayList<ExpressionNode>();
+			expressions.add(node);
+			while(s.hasNext(INFIXOP)) {
+				operators.add(s.next());
+				expressions.add(Parser.parseExpression(s, variables, false));
+			}
+			while(operators.contains("*")) {
+				int index = operators.indexOf("*");
+				String operation = operators.remove(index);
+				ExpressionNode expression1 = expressions.remove(index);
+				ExpressionNode expression2 = expressions.remove(index);
+				expressions.add(index, new ExpressionNode(operation, expression1, expression2));
+			}
+			while(operators.contains("/")) {
+				int index = operators.indexOf("/");
+				String operation = operators.remove(index);
+				ExpressionNode expression1 = expressions.remove(index);
+				ExpressionNode expression2 = expressions.remove(index);
+				expressions.add(index, new ExpressionNode(operation, expression1, expression2));
+			}
+			while(operators.contains("+")) {
+				int index = operators.indexOf("+");
+				String operation = operators.remove(index);
+				ExpressionNode expression1 = expressions.remove(index);
+				ExpressionNode expression2 = expressions.remove(index);
+				expressions.add(index, new ExpressionNode(operation, expression1, expression2));
+			}
+			while(operators.contains("-")) {
+				int index = operators.indexOf("-");
+				String operation = operators.remove(index);
+				ExpressionNode expression1 = expressions.remove(index);
+				ExpressionNode expression2 = expressions.remove(index);
+				expressions.add(index, new ExpressionNode(operation, expression1, expression2));
+			}
 		}
 		return node;
 	}
@@ -230,7 +270,7 @@ public class Parser {
 	public static SensorNode parseSensor(Scanner s, Map<String, VariableNode> variables) {
 		String sensor = s.next();
 		if(Parser.checkFor(OPENPAREN, s)) {
-			ExpressionNode expression = Parser.parseExpression(s, variables);
+			ExpressionNode expression = Parser.parseExpression(s, variables, true);
 			Parser.require(CLOSEPAREN, "\")\" expected", s);
 			return new SensorNode(sensor, expression);
 		}

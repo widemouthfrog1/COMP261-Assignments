@@ -9,6 +9,7 @@ public class ExpressionNode {
 	SensorNode sensor = null;
 	String operation = null;
 	ExpressionNode expression1 = null, expression2 = null;
+	boolean parenthesise = false;//new word? Definition: To surround in parentheses
 	
 	public ExpressionNode(int num) {
 		this.num = num;
@@ -16,6 +17,10 @@ public class ExpressionNode {
 	
 	public ExpressionNode(VariableNode variable) {
 		this.variable = variable;
+	}
+	
+	public ExpressionNode(ExpressionNode expression) {
+		this.expression1 = expression;
 	}
 	
 	public ExpressionNode(SensorNode sensor) {
@@ -35,17 +40,19 @@ public class ExpressionNode {
 		}else if(this.sensor != null) {
 			return this.sensor.evaluate(robot);
 		}else if(this.operation != null) {
-			if(this.operation.equals("add")) {
+			if(this.operation.equals("add")||this.operation.equals("+")) {
 				return expression1.evaluate(robot)+expression2.evaluate(robot);
-			}else if(this.operation.equals("sub")) {
+			}else if(this.operation.equals("sub")||this.operation.equals("-")) {
 				return expression1.evaluate(robot)-expression2.evaluate(robot);
-			}else if(this.operation.equals("mul")) {
+			}else if(this.operation.equals("mul")||this.operation.equals("*")) {
 				return expression1.evaluate(robot)*expression2.evaluate(robot);
-			}else if(this.operation.equals("div")) {
+			}else if(this.operation.equals("div")||this.operation.equals("/")) {
 				return expression1.evaluate(robot)/expression2.evaluate(robot);
 			}else {
 				throw new ParserFailureException("Operation expected");
 			}
+		}else if(this.parenthesise) {
+			return this.expression1.evaluate(robot);
 		}else {
 			throw new ParserFailureException("Can't evaluate expression");
 		}
@@ -60,6 +67,8 @@ public class ExpressionNode {
 			return this.sensor.toString();
 		}else if(this.operation != null) {
 			return this.operation+"("+this.expression1+","+this.expression2+")";
+		}else if(this.parenthesise) {
+			return "("+this.expression1+")";
 		}else {
 			throw new ParserFailureException("toString error");
 		}
