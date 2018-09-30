@@ -1,0 +1,76 @@
+while(true){
+  if(numBarrels == 0){
+    wait;
+  }elif(oppFB == 1){
+    takeFuel;
+  }else{
+    if(barrelFB < 0){
+   	  $inFront = 0;
+      $FB = barrelFB * -1;
+    }else{
+      $inFront = 1;
+      $FB = barrelFB;
+    }
+    if(barrelLR < 0){
+      $onRight = 0;
+      $LR = barrelLR * -1;
+    }else{
+      $onRight = 1;
+      $LR = barrelLR;
+    }
+    if(oppLR < 0){
+      $oppOnRight = 0;
+      $oppLR = oppLR * -1;
+    }else{
+      $oppOnRight = 1;
+      $oppLR = oppLR;
+    }
+    if(oppFB < 0){
+      $oppInFront = 0;
+      $oppFB = oppFB * -1;
+    }else{
+      $oppInFront = 1;
+      $oppFB = oppFB;
+    }
+    if($FB + $LR < $oppFB - $FB + $oppLR - $LR){
+      if($inFront == 1){
+        move($FB + 1);
+        if($onRight == 1){
+          turnR;
+          move($RL + 1);
+      	}else{
+      	  turnL;
+          move($RL * -1 + 1);
+      	}
+      }else{
+      	if($onRight == 1){
+          turnR;
+          move($RL + 1);
+          turnR;
+      	}else{
+      	  turnL;
+          move($RL * -1 + 1);
+          turnL;
+      	}
+      	move($FB * -1 + 1);
+      }
+    }elif(numBarrels == 1 || numBarrels == 0){
+      wait(1);
+    }else{
+      if(barrelFB(1) >= 0){
+      	move(barrelFB(1) + 1);
+      }else{
+        move(barrelFB(1) * -1 + 1);
+      }
+      if(barrelLR(1) >= 0){
+        turnR;
+      	move(barrelLR(1) + 1);
+      }else{
+      turnL;
+        move(barrelLR(1) * -1 + 1);
+      }
+    }
+    takeFuel;
+  }
+  
+}

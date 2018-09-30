@@ -87,13 +87,14 @@ public class Parser {
 	static Pattern CLOSEBRACE = Pattern.compile("\\}");
 	static Pattern ACTION = Pattern.compile("move|turnL|turnR|takeFuel|wait|shieldOn|shieldOff|turnAround");
 	static Pattern RELOP = Pattern.compile("gt|lt|eq");
-	static Pattern INFIXRELOP = Pattern.compile(">|<|=");
+	static Pattern INFIXRELOP = Pattern.compile(">|<|==|>=|<=|!=");
 	static Pattern SENSOR = Pattern.compile("fuelLeft|oppLR|oppFB|numBarrels|barrelLR|barrelFB|wallDist");
 	static Pattern OP = Pattern.compile("add|sub|mul|div");
-	static Pattern INFIXOP = Pattern.compile("+|-|*|/");
-	static Pattern EXPROP = Pattern.compile("and|or|not");
-	static Pattern INFIXEXPROP = Pattern.compile("&&|\\|\\");
+	static Pattern INFIXOP = Pattern.compile("\\+|-|\\*|/");
+	static Pattern CONDOP = Pattern.compile("and|or|not");
+	static Pattern INFIXCONDOP = Pattern.compile("&&|\\|\\|");
 	static Pattern VARPAT = Pattern.compile("\\$[A-Za-z][A-Za-z0-9]*");
+	static Pattern BOOL = Pattern.compile("true|false");
 	
 	
 	/**
@@ -117,14 +118,14 @@ public class Parser {
 			statement = new StatementNode(new LoopNode(Parser.parseBlock(s, variables)));
 		}else if(Parser.checkFor("if", s)){
 			Parser.require(OPENPAREN, "\"(\" expected", s);
-			ConditionNode condition = Parser.parseCondition(s, variables);
+			ConditionNode condition = Parser.parseCondition(s, variables, true);
 			Parser.require(CLOSEPAREN, "\")\" expected", s);
 			BlockNode block = Parser.parseBlock(s, variables);
 			ArrayList<ConditionNode> conditions = new ArrayList<ConditionNode>();
 			ArrayList<BlockNode> blocks = new ArrayList<BlockNode>();
 			while(Parser.checkFor("elif", s)) {
 				Parser.require(OPENPAREN, "\"(\" expected", s);
-				conditions.add(Parser.parseCondition(s, variables));
+				conditions.add(Parser.parseCondition(s, variables, true));
 				Parser.require(CLOSEPAREN, "\")\" expected", s);
 				blocks.add(Parser.parseBlock(s, variables));
 			}
@@ -136,7 +137,7 @@ public class Parser {
 			}
 		}else if(Parser.checkFor("while", s)){
 			Parser.require(OPENPAREN, "\"(\" expected", s);
-			ConditionNode condition = Parser.parseCondition(s, variables);
+			ConditionNode condition = Parser.parseCondition(s, variables, true);
 			Parser.require(CLOSEPAREN, "\")\" expected", s);
 			BlockNode block = Parser.parseBlock(s, variables);
 			statement = new StatementNode(new WhileNode(condition, block));
@@ -177,33 +178,75 @@ public class Parser {
 		return new BlockNode(blockStatements);
 	}
 	
-	public static ConditionNode parseCondition(Scanner s, Map<String, VariableNode> variables) {
-		if(s.hasNext(EXPROP)) {
+	public static ConditionNode parseCondition(Scanner s, Map<String, VariableNode> variables, boolean infix) {
+		ConditionNode node = null;
+		if(s.hasNext(CONDOP)) {
 			String operator = s.next();
 			Parser.require(OPENPAREN, "\"(\" expected", s);
-			ConditionNode condition1 = Parser.parseCondition(s, variables);
+			ConditionNode condition1 = Parser.parseCondition(s, variables, true);
 			if(Parser.checkFor(CLOSEPAREN, s)) {
-				return new ConditionNode(operator, condition1);
+				node = new ConditionNode(operator, condition1);
+			}else {
+				Parser.require(",", "\",\" expected", s);
+				ConditionNode condition2 = Parser.parseCondition(s, variables, true);
+				Parser.require(CLOSEPAREN, "\")\" expected", s);
+				node = new ConditionNode(operator, condition1, condition2);
 			}
-			Parser.require(",", "\",\" expected", s);
-			ConditionNode condition2 = Parser.parseCondition(s, variables);
+		}else if(Parser.checkFor(OPENPAREN, s)) {
+			node = new ConditionNode(Parser.parseCondition(s, variables, true));
 			Parser.require(CLOSEPAREN, "\")\" expected", s);
-			return new ConditionNode(operator, condition1, condition2);
+		}else if(s.hasNext(BOOL)) {
+			node = new ConditionNode(s.nextBoolean());
+		}else if(s.hasNext("!")) {
+			node = new ConditionNode("!", Parser.parseCondition(s, variables, true));
+		}else if(s.hasNext(NUMPAT)||s.hasNext(SENSOR)||s.hasNext(VARPAT)) {//has expression
+			ExpressionNode expression1 = Parser.parseExpression(s, variables, true);
+			String operator = Parser.require(INFIXRELOP, "Relational operator expected", s);
+			ExpressionNode expression2 = Parser.parseExpression(s, variables, true);
+			node = new ConditionNode(operator, expression1, expression2);
+		}else if(s.hasNext(RELOP)){
+			String name = s.next();
+			Parser.require(OPENPAREN, "\"(\" expected", s);
+			ExpressionNode expression1 = Parser.parseExpression(s, variables, true);
+			Parser.require(",", "\",\" expected", s);
+			ExpressionNode expression2 = Parser.parseExpression(s, variables, true);
+			Parser.require(CLOSEPAREN, "\")\" expected", s);
+			node = new ConditionNode(name, expression1, expression2);
+		}else {
+			Parser.fail("Condition expected", s);
 		}
-		String name = Parser.require(RELOP, "Relational operator expected", s);
-		Parser.require(OPENPAREN, "\"(\" expected", s);
-		ExpressionNode expression1 = Parser.parseExpression(s, variables, true);
-		Parser.require(",", "\",\" expected", s);
-		ExpressionNode expression2 = Parser.parseExpression(s, variables, true);
-		Parser.require(CLOSEPAREN, "\")\" expected", s);
-		return new ConditionNode(name, expression1, expression2);
+		if(infix) {
+			ArrayList<String> operators = new ArrayList<String>();
+			ArrayList<ConditionNode> conditions = new ArrayList<ConditionNode>();
+			conditions.add(node);
+			while(s.hasNext(INFIXCONDOP)) {
+				operators.add(s.next());
+				conditions.add(Parser.parseCondition(s, variables, false));
+				while(operators.contains("&&")) {
+					int index = operators.indexOf("&&");
+					String operation = operators.remove(index);
+					ConditionNode condition1 = conditions.remove(index);
+					ConditionNode condition2 = conditions.remove(index);
+					conditions.add(index, new ConditionNode(operation, condition1, condition2));
+				}
+				while(operators.contains("||")) {
+					int index = operators.indexOf("||");
+					String operation = operators.remove(index);
+					ConditionNode condition1 = conditions.remove(index);
+					ConditionNode condition2 = conditions.remove(index);
+					conditions.add(index, new ConditionNode(operation, condition1, condition2));
+				}
+				node = conditions.get(0);
+			}
+		}
+		return node;
 	}
 	
 	public static ExpressionNode parseExpression(Scanner s, Map<String, VariableNode> variables, boolean infix) {
 		ExpressionNode node = null;
 		if(s.hasNext(NUMPAT)) {
 			node = new ExpressionNode(s.nextInt());
-		}else if(s.hasNext(OPENPAREN)) {
+		}else if(Parser.checkFor(OPENPAREN, s)) {
 			node = new ExpressionNode(Parser.parseExpression(s, variables, true));
 			Parser.require(CLOSEPAREN, "\")\" expected", s);
 		}else if(s.hasNext(SENSOR)) {
@@ -249,20 +292,22 @@ public class Parser {
 				ExpressionNode expression2 = expressions.remove(index);
 				expressions.add(index, new ExpressionNode(operation, expression1, expression2));
 			}
-			while(operators.contains("+")) {
-				int index = operators.indexOf("+");
-				String operation = operators.remove(index);
-				ExpressionNode expression1 = expressions.remove(index);
-				ExpressionNode expression2 = expressions.remove(index);
-				expressions.add(index, new ExpressionNode(operation, expression1, expression2));
+			while(operators.contains("+") || operators.contains("-")) {
+				int index1 = operators.indexOf("+");
+				int index2 = operators.indexOf("-");
+				if(index1 != -1 && index1 < index2 || index2 == -1) {
+					String operation = operators.remove(index1);
+					ExpressionNode expression1 = expressions.remove(index1);
+					ExpressionNode expression2 = expressions.remove(index1);
+					expressions.add(index1, new ExpressionNode(operation, expression1, expression2));
+				}else {
+					String operation = operators.remove(index2);
+					ExpressionNode expression1 = expressions.remove(index2);
+					ExpressionNode expression2 = expressions.remove(index2);
+					expressions.add(index2, new ExpressionNode(operation, expression1, expression2));
+				}
 			}
-			while(operators.contains("-")) {
-				int index = operators.indexOf("-");
-				String operation = operators.remove(index);
-				ExpressionNode expression1 = expressions.remove(index);
-				ExpressionNode expression2 = expressions.remove(index);
-				expressions.add(index, new ExpressionNode(operation, expression1, expression2));
-			}
+			node = expressions.get(0);
 		}
 		return node;
 	}

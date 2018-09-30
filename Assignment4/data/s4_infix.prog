@@ -1,0 +1,67 @@
+while(true){
+  $oppX = oppLR;
+  $oppY = oppFB;
+  
+  if($oppX >= 0){
+    $absoluteOppX = $oppX;
+  }else{
+    $absoluteOppX = $oppX * -1;
+  }
+  
+  if($oppY >= 0){
+    $absoluteOppY = $oppY;
+  }else{
+    $absoluteOppY = $oppY * -1;
+  }
+  
+  if(numBarrels == 0){
+    if($oppY > 0){
+      move(1);
+    }else{
+  	  if($oppX < 0){
+  	    turnL;
+  	  }elif($oppX > 0){
+  	    turnR;
+  	  }else{
+  	    turnL;
+  	    turnL;
+  	  }
+    }
+  }else{
+    $barrelX = barrelLR;
+    $barrelY = barrelFB;
+    
+    if($barrelX >= 0){
+      $absoluteBarrelX = $barrelX;
+    }else{
+      $absoluteBarrelX = $barrelX * -1;
+    }
+  
+    if($barrelY >= 0){
+      $absoluteBarrelY = $barrelY;
+    }else{
+      $absoluteBarrelY = $barrelY * -1;
+    }
+    
+    if($absoluteBarrelX + $absoluteBarrelY < ($absoluteOppX + $absoluteOppX) - ($absoluteBarrelX + $absoluteBarrelY)){
+      $barrelX = barrelLR(1);
+      $barrelY = barrelFB(1);
+    }
+  
+    if($barrelY > 0){
+      move(1);
+    }elif($barrelY == 0){
+      takeFuel;
+    }else{
+  	  if($barrelX < 0 || false){
+  	    turnL;
+  	  }elif(($barrelX > 0) && true){
+  	    turnR;
+  	  }else{
+  	    turnL;
+  	    turnL;
+  	  }
+    }
+  }
+  
+}

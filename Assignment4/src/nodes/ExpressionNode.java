@@ -21,6 +21,7 @@ public class ExpressionNode {
 	
 	public ExpressionNode(ExpressionNode expression) {
 		this.expression1 = expression;
+		this.parenthesise = true;
 	}
 	
 	public ExpressionNode(SensorNode sensor) {
@@ -66,6 +67,9 @@ public class ExpressionNode {
 		}else if(this.sensor != null) {
 			return this.sensor.toString();
 		}else if(this.operation != null) {
+			if(this.operation.length() == 1) {
+				return this.expression1+this.operation+this.expression2;
+			}
 			return this.operation+"("+this.expression1+","+this.expression2+")";
 		}else if(this.parenthesise) {
 			return "("+this.expression1+")";
